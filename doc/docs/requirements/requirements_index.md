@@ -69,4 +69,18 @@ This register details all formal system requirements for Omniwrench with full tr
 | [`REQ-00084`](REQ-00084.md) | Full Cyberpunk HUD Telemetry Layout (Header & Footer) | ADR-0043 | High | TUI Header/Footer Widget Render Test | Specified |
 | [`REQ-00085`](REQ-00085.md) | Unclean Shutdown Detection & State Auto-Recovery | ADR-0044 | Critical | Crash Lockfile & Resume State Test | Specified |
 | [`REQ-00086`](REQ-00086.md) | User-Configurable JSON Keymap Overrides & Leader Keys | ADR-0045 | High | Automated Keymap Parser & Dispatcher Test | Specified |
+| [`REQ-00087`](REQ-00087.md) | TUI Autocompletion Popover & Inline Ghost Text | ADR-0046 | High | Automated Fuzzy Completion & Rendering Test | Specified |
 
+
+## Advanced Autonomous Agent & Local AI Engine Requirements
+
+| ID | Title | Traceability | Priority | Verification Method | Status |
+|---|---|---|---|---|---|
+| [`REQ-00088`](REQ-00088.md) | Dual Chat Mode with Explicit Reasoning & Thinking Demux | ADR-0047 | Critical | Thinking Stream Extraction Test | Specified |
+| [`REQ-00089`](REQ-00089.md) | Unified Tri-Interface Prompting (CLI, TUI, Web UI) | ADR-0048 | Critical | CLI / TUI / Web E2E Test | Specified |
+| [`REQ-00090`](REQ-00090.md) | Embedded llama.cpp Local LLM Backend Plugin | ADR-0049 | Critical | llama.cpp In-Memory Inference Test | Specified |
+| [`REQ-00091`](REQ-00091.md) | Multi-Source Model Hub Manager (Ollama & HuggingFace) | ADR-0050 | High | Ollama / HF Download & Gemma Test | Specified |
+| [`REQ-00092`](REQ-00092.md) | True Implementation Quality Mandate (Zero-Mock Guarantee) | CS-0055 | Critical | Bytecode & Runtime No-Mock Static Audit | Specified |
+| [`REQ-00093`](REQ-00093.md) | Advanced File Operations & Binary Transformation Tool Plugin | ADR-0051 | Critical | File Tree / Hex / Diff / Grep Test | Specified |
+| [`REQ-00094`](REQ-00094.md) | Asynchronous Background Tool Execution & Callbacks | ADR-0052 | High | Virtual Thread Background Tool Test | Specified |
+| [`REQ-00095`](REQ-00095.md) | Ultra-Precise OpenAPI & JSON Schema Function Descriptions | ADR-0053 | Critical | OpenAPI 3.1 Schema & Validation Test | Specified |

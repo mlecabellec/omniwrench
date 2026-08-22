@@ -521,3 +521,19 @@ This document stores persistent project knowledge, architectural decisions, and 
     * Chained key sequences (e.g. `<leader>ff` -> `/find`, `<leader>gd` -> `/diff`, `<leader>mm` -> `/model`, `<leader>sw` -> `/swarm`).
   - **Action Mapping**: Maps keystrokes directly to internal TUI commands, focus shifts, or slash command invocations.
   - **Hot Reloading**: Editing keymap JSON files triggers instant hot-reload via `WatchService` without restarting the application.
+
+### ADR-0046: TUI Autocompletion Popover and Inline Ghost Text Engine
+- **Status**: Accepted (2026-08-22)
+- **Context**: Fast, error-free interactive coding in terminal environments requires modern autocompletion for slash commands, relative file paths, model tiers, and subagent roles without cognitive strain.
+- **Decision**: Implemented **TUI Autocompletion Popover and Inline Ghost Text Engine** in `omniwrench-tui`:
+  - **Inline Ghost Text**:
+    * Renders subtle, dimmed inline autocomplete suggestions directly ahead of the cursor for instant visual feedback.
+    * `Tab` or `Right Arrow` accepts the completion.
+  - **Floating Autocompletion Popover**:
+    * When typing `/`, `@` (mentions/roles), or file paths (`./` or relative paths), a floating popup box appears anchored above the prompt input box.
+    * Supports fuzzy character matching (`FuzzyMatcher`) with matched substring highlighting.
+    * `Up`/`Down` arrows or `Ctrl+N`/`Ctrl+P` navigate candidate entries; `Enter` or `Tab` selects the active candidate.
+  - **Context-Aware Completion Providers**:
+    * **Slash Commands Provider**: `/plan`, `/run`, `/diff`, `/commit`, `/model`, `/swarm`, `/export`, `/plugin`, `/theme`, `/recover`.
+    * **Workspace File Path Provider**: Fuzzy-searches workspace repository files via cached symbol graph.
+    * **Model & Swarm Provider**: Autocompletes configured model tiers (`TRIVIAL`..`EXPERT`) and subagent roles.

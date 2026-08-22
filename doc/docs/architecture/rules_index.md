@@ -52,11 +52,15 @@ CS40 --> CS30 : Named Constants
 5. [Constraint CS-0050: Verifiable Integrity and Safety Standards](CS-0050.md)
    - Bounded stack depth, memory safety profiles, and explicit bounds checking.
 
-6. [Constraint CS-0060: High-Integrity and Deterministic Logic](CS-0060.md)
+6. [Constraint CS-0055: Zero-Mock Production Mandate & Runtime Realism](CS-0055.md)
+   - Zero mock frameworks or dummy returns in production code paths (`src/main`).
+   - Verifiable real I/O, subprocess invocations, and cryptographic asset validation.
+
+7. [Constraint CS-0060: High-Integrity and Deterministic Logic](CS-0060.md)
    - Total branching on all conditional logic (`else` mandatory).
    - Variable shadowing prevention.
    - Exception-safe lifecycle hooks.
 
-7. [Constraint CS-0070: Agent Operational Standards and Submission Protocols](CS-0070.md)
+8. [Constraint CS-0070: Agent Operational Standards and Submission Protocols](CS-0070.md)
    - Mandatory human clearance before `git commit` or `git push`.
    - Local build pass, full test pass, and deletion analysis before submission requests.

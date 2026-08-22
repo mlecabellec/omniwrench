@@ -52,3 +52,5 @@ endif
 4. **Stage 4: Documentation Verification**: Full `mkdocs-kit` HTML/PDF compilation with zero broken links.
 5. **Stage 5: Deletion & Impact Analysis**: Strict human clearance guardrails per `CS-0070`.
 
+
+6. **Stage 6: Zero-Mock Production Verification**: ArchUnit scan enforcing `CS-0055` (no mock dependencies or stubbed returns in `src/main`).

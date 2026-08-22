@@ -90,6 +90,7 @@ nav:
       - "CS-0030 Java Coding Standards": architecture/CS-0030.md
       - "CS-0040 Prohibition of Magic Numbers": architecture/CS-0040.md
       - "CS-0050 Verifiable Integrity & Safety": architecture/CS-0050.md
+      - "CS-0055 Zero-Mock Production Mandate": architecture/CS-0055.md
       - "CS-0060 High-Integrity Deterministic Logic": architecture/CS-0060.md
       - "CS-0070 Operational Submission Protocols": architecture/CS-0070.md
   - Requirements:
@@ -138,6 +139,15 @@ nav:
           - "REQ-00084": requirements/REQ-00084.md
           - "REQ-00085": requirements/REQ-00085.md
           - "REQ-00086": requirements/REQ-00086.md
+          - "REQ-00087": requirements/REQ-00087.md
+          - "REQ-00088": requirements/REQ-00088.md
+          - "REQ-00089": requirements/REQ-00089.md
+          - "REQ-00090": requirements/REQ-00090.md
+          - "REQ-00091": requirements/REQ-00091.md
+          - "REQ-00092": requirements/REQ-00092.md
+          - "REQ-00093": requirements/REQ-00093.md
+          - "REQ-00094": requirements/REQ-00094.md
+          - "REQ-00095": requirements/REQ-00095.md
   - Features:
       - Features Register: features/features_index.md
   - Use Cases:
@@ -166,11 +176,19 @@ nav:
       - Developer Standards & Workflow: development/dev_rules.md
   - Project Management & Tasks:
       - Project Management Framework: project/project_management.md
-      - Task TSK-20260822-001: project/tasks/TSK-20260822-001.md
-      - Task TSK-20260822-002: project/tasks/TSK-20260822-002.md
-      - Task TSK-20260822-003: project/tasks/TSK-20260822-003.md
-      - Task TSK-20260822-004: project/tasks/TSK-20260822-004.md
-      - Task TSK-20260822-005: project/tasks/TSK-20260822-005.md
-      - Task TSK-20260822-006: project/tasks/TSK-20260822-006.md
+      - Tasks Register:
+          - "Task TSK-20260822-001": project/tasks/TSK-20260822-001.md
+          - "Task TSK-20260822-002": project/tasks/TSK-20260822-002.md
+          - "Task TSK-20260822-003": project/tasks/TSK-20260822-003.md
+          - "Task TSK-20260822-004": project/tasks/TSK-20260822-004.md
+          - "Task TSK-20260822-005": project/tasks/TSK-20260822-005.md
+          - "Task TSK-20260822-006": project/tasks/TSK-20260822-006.md
+          - "Task TSK-20260822-007": project/tasks/TSK-20260822-007.md
+          - "Task TSK-20260822-008": project/tasks/TSK-20260822-008.md
+          - "Task TSK-20260822-009": project/tasks/TSK-20260822-009.md
+          - "Task TSK-20260822-010": project/tasks/TSK-20260822-010.md
+          - "Task TSK-20260822-011": project/tasks/TSK-20260822-011.md
+          - "Task TSK-20260822-012": project/tasks/TSK-20260822-012.md
+          - "Task TSK-20260822-013": project/tasks/TSK-20260822-013.md
   - Knowledge Base & Memory:
       - Project Knowledge Base: knowledge/knowledge_base.md
