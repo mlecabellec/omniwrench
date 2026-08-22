@@ -1,0 +1,10 @@
+# Python dependencies for MkDocs-Kit documentation build
+# Used by GitHub Actions setup-python pip cache and CI pipeline
+setuptools<82.0.0
+mkdocs>=1.4.0
+mkdocs-material>=9.0.0
+weasyprint>=59.0
+wireviz>=0.4.1
+nwdiag>=3.0.0
+bit_field>=1.0.1
+pyyaml>=6.0
