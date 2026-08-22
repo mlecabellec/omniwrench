@@ -344,3 +344,57 @@ This document stores persistent project knowledge, architectural decisions, and 
     * Packages Spring Boot executable Fat JAR (`omniwrench-app.jar`).
     * Compiles GraalVM Native Image binary (`omniwrench`).
     * Publishes multi-module release bundle with SHA-256 checksum manifests.
+
+### ADR-0033: Generational Epoch Compaction and Context Dreaming Engine
+- **Status**: Accepted (2026-08-22)
+- **Context**: Prolonged agent sessions (multi-day refactorings, extensive test generation, continuous monitoring) produce megabytes of conversation history and tool outputs, exceeding model context budgets and increasing API costs.
+- **Decision**: Implemented **Generational Epoch Compaction (Dreaming)** in `omniwrench-core`:
+  - **Token Threshold Trigger**: When active conversation tokens exceed a configurable budget (default: 75% of model context window or 64k tokens), a background compaction task is scheduled on the bounded thread pool.
+  - **Context Distillation ("Dreaming")**: A lightweight, fast model distills conversational history into structured, non-lossy summary blocks:
+    * Identified Goals & Decisions Made
+    * Active Working Hypothesis & Current State
+    * Modified Files & Symbol Locations
+    * Unresolved Issues & Next Steps
+  - **Generational Window Rotation**:
+    * Current session window transitions to a new generation epoch (`epochId = UUID`), referencing `previousEpochId`.
+    * Distilled summary block becomes the preamble for the new active window.
+    * Raw previous epoch event files are moved to `.omniwrench/sessions/{sessionId}/archive/{epochId}/` and compressed via zstd/gzip.
+  - **Zero Loss of Auditable Trace**: Historical turns remain indexed and searchable via BM25/FTS5 (ADR-0027) without consuming active context tokens.
+
+### ADR-0034: Adaptive Multi-Theme Engine with Dynamic Color Depth Fallback
+- **Status**: Accepted (2026-08-22)
+- **Context**: Terminals run in various environments (modern GPU-accelerated terminals with 24-bit TrueColor, SSH sessions with 256 colors, Linux virtual consoles `/dev/tty1` with 16 basic ANSI colors). Developers also have diverse aesthetic preferences for visual themes.
+- **Decision**: Implemented an **Adaptive Multi-Theme Engine** in `omniwrench-tui`:
+  - **Dynamic Color Depth Negotiation**:
+    * Inspects `COLORTERM=truecolor|24bit` and `TERM=xterm-256color|...` at startup.
+    * Automatically quantizes 24-bit RGB values to the nearest 256-color palette index or 16-color ANSI code using Euclidean RGB distance when running on legacy or remote SSH terminals.
+  - **Default Signature Theme**: *Cyberpunk Neon* (Background `#0d0f18`, Primary Cyan `#00ffcc`, Accent Magenta `#ff007f`, Secondary Violet `#7928ca`, Warning Amber `#ffb86c`, Success Emerald `#50fa7b`).
+  - **User & Custom Themes**:
+    * Loads custom JSON color schemes from `.omniwrench/themes/{name}.json` (e.g. `dracula.json`, `nord.json`, `matrix.json`, `solarized-dark.json`).
+    * Hot-switchable at runtime via `/theme <name>` command or `F6` shortcut without restarting the application.
+
+### ADR-0035: In-Memory Actor Channels with Structured Consensus for Subagent Swarms
+- **Status**: Accepted (2026-08-22)
+- **Context**: Subagents in the Dynamic Hybrid Swarm (ADR-0017) require robust message-passing semantics for multi-agent discussions, code reviews, and architectural trade-off negotiations without race conditions or deadlocks.
+- **Decision**: Implemented **In-Memory Actor Channels with Structured Consensus** in `omniwrench-core`:
+  - **Virtual Thread Actor Loop**: Each subagent runs in an isolated virtual thread actor with a dedicated mailbox (`LinkedTransferQueue<SwarmEnvelope>`).
+  - **Immutable Swarm Envelopes (`SwarmEnvelope`)**:
+    * Fields: `messageId`, `senderAgentId`, `recipientAgentId` (or `"swarm:broadcast"`), `conversationTopic`, `messageType` (`PROPOSAL`, `CRITIQUE`, `VOTE`, `QUERY`, `OBSERVATION`), `payload`, `timestamp`.
+  - **Consensus Voting Protocol (`ConsensusCoordinator`)**:
+    * When subagents face architectural decisions (e.g. library selection, database schema design, refactoring strategy), the lead orchestrator or initiator opens a `ConsensusRound`.
+    * Subagents register votes with structured rationale (`Vote(approve=bool, confidence=0.0..1.0, rationale=str)`).
+    * Quorum threshold (e.g. $\ge 66\%$ weighted confidence) resolves the consensus into the parent `SessionContext`.
+  - **Deadlock & Timeout Guards**: Maximum turn and wall-clock time limits per discussion thread (default: 5 rounds or 60 seconds), failing safely back to the `LeadOrchestrator` decision.
+
+### ADR-0036: Dual Model Context Protocol (MCP) Client and Server Engine
+- **Status**: Accepted (2026-08-22)
+- **Context**: The open Model Context Protocol (MCP) standard enables universal tool discovery and context sharing across AI ecosystems. Omniwrench must both leverage external tool servers (GitHub, PostgreSQL, Docker, Filesystem) and expose its unique capabilities (AST inspection, Home Assistant, multi-agent engine) to external IDEs.
+- **Decision**: Implemented a **Dual MCP Client & Server Engine** in `omniwrench-core` and `omniwrench-tools`:
+  - **MCP Client (`McpClientManager`)**:
+    * Reads configured external MCP servers from `.omniwrench/mcp-servers.json` (or `~/.config/omniwrench/mcp-servers.json`).
+    * Supports both `stdio` (spawning subprocesses with stdin/stdout JSON-RPC framing) and `sse` (HTTP Server-Sent Events with HTTP POST message endpoints) transports.
+    * Dynamically registers external MCP tools into Omniwrench's `ToolRegistry` with namespace prefixes (e.g. `mcp:github/create_issue`, `mcp:postgres/query`).
+  - **MCP Server (`McpServerHost`)**:
+    * Exposes Omniwrench's registered tools, prompt templates, and resource URI schemes (`omniwrench://sessions`, `omniwrench://tasks`) as an MCP server.
+    * Operates over Stdio mode (`omniwrench mcp-server --stdio`) for integration into Claude Desktop, Cursor, and VS Code, or over SSE on a dedicated HTTP route (`/mcp/sse`).
+  - **Security & Authorization**: All MCP tool executions pass through the 9-level policy engine (ADR-0020) and require human clearance for mutating/destructive operations.
