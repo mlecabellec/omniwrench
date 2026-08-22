@@ -137,6 +137,7 @@ nav:
           - "REQ-00083": requirements/REQ-00083.md
           - "REQ-00084": requirements/REQ-00084.md
           - "REQ-00085": requirements/REQ-00085.md
+          - "REQ-00086": requirements/REQ-00086.md
   - Features:
       - Features Register: features/features_index.md
   - Use Cases:

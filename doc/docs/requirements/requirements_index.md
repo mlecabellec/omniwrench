@@ -68,4 +68,5 @@ This register details all formal system requirements for Omniwrench with full tr
 | [`REQ-00083`](REQ-00083.md) | Multi-Channel Notification Mesh (OSC 777, Bell, HA Push) | ADR-0042 | Medium | Terminal Escape & Event Push Test | Specified |
 | [`REQ-00084`](REQ-00084.md) | Full Cyberpunk HUD Telemetry Layout (Header & Footer) | ADR-0043 | High | TUI Header/Footer Widget Render Test | Specified |
 | [`REQ-00085`](REQ-00085.md) | Unclean Shutdown Detection & State Auto-Recovery | ADR-0044 | Critical | Crash Lockfile & Resume State Test | Specified |
+| [`REQ-00086`](REQ-00086.md) | User-Configurable JSON Keymap Overrides & Leader Keys | ADR-0045 | High | Automated Keymap Parser & Dispatcher Test | Specified |
 

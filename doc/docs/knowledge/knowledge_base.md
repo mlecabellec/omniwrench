@@ -510,3 +510,14 @@ This document stores persistent project knowledge, architectural decisions, and 
     * On startup, if `active.lock` is present and stale (or points to an aborted session), Omniwrench displays an interactive recovery modal:
       > *"⚠️ Unclean shutdown detected from session [abc-123] on task [TSK-20260822-005]. Would you like to resume? [Y/n]"*
     * Accepting restores exact conversation turns, reinstantiates in-flight task DAG steps, and continues execution seamlessly.
+
+### ADR-0045: User-Configurable JSON Keymap Overrides and Leader Key Engine
+- **Status**: Accepted (2026-08-22)
+- **Context**: Power developers frequently require personalized keyboard shortcuts, Leader key bindings (e.g. `Space f f` to find files, `Space g d` for diff viewer), or alternate key schemes without modifying source code.
+- **Decision**: Implemented **User-Configurable JSON Keymap Overrides and Leader Key Engine** in `omniwrench-tui`:
+  - **Keymap Directory**: `.omniwrench/keymaps/{profile}.json` (e.g. `default.json`, `vim-leader.json`, `emacs.json`).
+  - **Leader Key Sequences**:
+    * Supports configurable Leader key (default: `Space` in normal mode).
+    * Chained key sequences (e.g. `<leader>ff` -> `/find`, `<leader>gd` -> `/diff`, `<leader>mm` -> `/model`, `<leader>sw` -> `/swarm`).
+  - **Action Mapping**: Maps keystrokes directly to internal TUI commands, focus shifts, or slash command invocations.
+  - **Hot Reloading**: Editing keymap JSON files triggers instant hot-reload via `WatchService` without restarting the application.

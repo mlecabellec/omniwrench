@@ -57,4 +57,5 @@ Comprehensive catalog of user-facing and engine-level functional capabilities pr
 - **`FR-00039` Multi-Channel Notification Mesh**: Terminal OSC 777 desktop notifications, ANSI bell, and Home Assistant push alerts (`ADR-0042`).
 - **`FR-00040` Full Cyberpunk HUD Telemetry**: Top header and bottom footer widgets displaying real-time session, model, token, git, swarm, and JVM telemetry (`ADR-0043`).
 - **`FR-00041` Unclean Shutdown Auto-Recovery**: Automatic crash detection with interactive `/recover` prompt restoring exact conversation turns and in-flight tasks (`ADR-0044`).
+- **`FR-00042` Configurable JSON Keymaps & Leader Keys**: Chained leader sequences (`Space f f`, `Space g d`) with dynamic hot-reload from `.omniwrench/keymaps/` (`ADR-0045`).
 
