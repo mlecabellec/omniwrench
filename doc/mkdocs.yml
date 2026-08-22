@@ -1,0 +1,79 @@
+site_name: Omniwrench Documentation
+use_directory_urls: false
+
+plugins:
+  - search
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - toc.integrate
+  palette:
+    - scheme: slate          # Dark mode (default)
+      primary: cyan
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default        # Light mode
+      primary: cyan
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+nav:
+  - Welcome: index.md
+  - Topics Index: topics_index.md
+  - User Guide:
+      - Quick Start & Overview: user_guide/overview.md
+      - Modern Cyberpunk TUI Guide: user_guide/tui_guide.md
+      - Web & Telemetry Dashboard: user_guide/web_guide.md
+      - Configuration & Environment: user_guide/configuration_guide.md
+      - Workflows & Operations: user_guide/workflows.md
+  - Architecture:
+      - Architecture Index: architecture/architecture_index.md
+      - System Components: architecture/components.md
+      - Package Dependencies: architecture/dependencies.md
+      - Execution Sequences: architecture/sequences.md
+      - Reasoning Activities: architecture/activities.md
+      - Class Diagrams & Patterns: architecture/classes.md
+      - Interfaces & SPIs: architecture/interfaces.md
+      - File & State Formats: architecture/file_formats.md
+      - Configuration Specs: architecture/configuration.md
+  - Project Rules & Quality Constraints:
+      - Rules Index: architecture/rules_index.md
+      - "CS-0010 Quality Standards": architecture/CS-0010.md
+      - "CS-0020 AI Agent Rules": architecture/CS-0020.md
+      - "CS-0030 Java Coding Standards": architecture/CS-0030.md
+      - "CS-0040 Prohibition of Magic Numbers": architecture/CS-0040.md
+      - "CS-0050 Verifiable Integrity & Safety": architecture/CS-0050.md
+      - "CS-0060 High-Integrity Deterministic Logic": architecture/CS-0060.md
+      - "CS-0070 Operational Submission Protocols": architecture/CS-0070.md
+  - Requirements:
+      - Requirements Register: requirements/requirements_index.md
+  - Features:
+      - Features Register: features/features_index.md
+  - Use Cases:
+      - Use Cases Register: use_cases/use_cases_index.md
+  - Plugins & Extensions:
+      - Plugins Architecture: plugins/plugins_index.md
+  - API & Protocols:
+      - API Specification: api/api_index.md
+  - Quality & Verification:
+      - Quality Assurance Index: quality/quality_index.md
+      - Testing Strategy & Suites: quality/tests.md
+  - Development Rules:
+      - Developer Standards & Workflow: development/dev_rules.md
+  - Project Management & Tasks:
+      - Project Management Framework: project/project_management.md
+      - Task TSK-20260822-001: project/tasks/TSK-20260822-001.md
+      - Task TSK-20260822-002: project/tasks/TSK-20260822-002.md
+      - Task TSK-20260822-003: project/tasks/TSK-20260822-003.md
+      - Task TSK-20260822-004: project/tasks/TSK-20260822-004.md
+      - Task TSK-20260822-005: project/tasks/TSK-20260822-005.md
+  - Knowledge Base & Memory:
+      - Project Knowledge Base: knowledge/knowledge_base.md

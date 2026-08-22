@@ -1,0 +1,24 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: omniwrench
+  main:
+    banner-mode: console
+
+omniwrench:
+  mode: ${OMNIWRENCH_MODE:dual} # dual, tui, or web
+  workspace-path: ${OMNIWRENCH_WORKSPACE:.}}
+  tui:
+    theme: cyberpunk
+    fps-target: 30
+  engine:
+    max-reasoning-steps: 50
+    default-timeout-seconds: 120
+    max-threads: 8
+
+logging:
+  level:
+    root: INFO
+    com.omniwrench: DEBUG
