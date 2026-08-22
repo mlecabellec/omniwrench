@@ -549,3 +549,19 @@ This document stores persistent project knowledge, architectural decisions, and 
     2. OS Native Keyring lookup (via `libsecret` on Linux / GNOME / KDE, macOS Keychain, Windows Credential Manager).
     3. Encrypted `.omniwrench/vault.enc` file (prompts for master password on first access or caches in session memory).
   - **CLI / TUI Secret Management**: Interactive `/vault set <key> <value>`, `/vault list`, `/vault delete <key>`.
+
+### ADR-0055: ZeroMQ Transport Mesh with BSON Binary Serialization for Swarm IPC
+- **Status**: Accepted (2026-08-22)
+- **Context**: Autonomous subagents and multi-agent swarms require high-throughput, low-latency, resilient inter-process and inter-thread messaging supporting diverse messaging patterns and network topologies.
+- **Decision**: Implemented **ZeroMQ Transport Mesh with BSON Serialization** (`omniwrench-core` / `omniwrench-protocol`):
+  - **Serialization Engine**: **BSON** (Binary JSON) using Jackson BSON (`jackson-dataformat-bson`) for high-speed schema-flexible binary serialization with zero cleartext serialization overhead.
+  - **ZeroMQ Socket Topologies & Patterns**:
+    * **PUB / SUB & XPUB / XSUB**: Broadcast event bus and dynamic broker proxies for agent status & telemetry streams.
+    * **REQ / REP & DEALER / ROUTER**: Asynchronous request-reply for subagent task dispatching and result retrieval.
+    * **PUSH / PULL**: Parallel pipeline fan-out / fan-in for batch task decomposition across worker pools.
+  - **Supported Transport Transports**:
+    * `inproc://`: High-speed in-memory communication between Virtual Threads.
+    * `ipc://`: POSIX domain socket communication between local subagent subprocesses.
+    * `tcp://`: Network socket communication for distributed multi-node subagent clusters.
+    * `epgm://` / `pgm://` / UDP: Pragmatic General Multicast for zero-loss multicast agent synchronization.
+  - **ZeroMQ Implementation**: Pure Java **JeroMQ** engine for 100% portability with zero native C library dependencies, with optional native libzmq acceleration.

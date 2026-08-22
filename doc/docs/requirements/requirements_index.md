@@ -85,3 +85,4 @@ This register details all formal system requirements for Omniwrench with full tr
 | [`REQ-00094`](REQ-00094.md) | Asynchronous Background Tool Execution & Callbacks | ADR-0052 | High | Virtual Thread Background Tool Test | Specified |
 | [`REQ-00095`](REQ-00095.md) | Ultra-Precise OpenAPI & JSON Schema Function Descriptions | ADR-0053 | Critical | OpenAPI 3.1 Schema & Validation Test | Specified |
 | [`REQ-00096`](REQ-00096.md) | AES-256-GCM Encrypted Secret Vault & OS Keyring | ADR-0054 | Critical | Automated Vault Encryption, Keyring & Fallback Test | Specified |
+| [`REQ-00097`](REQ-00097.md) | ZeroMQ Transport Mesh with BSON Serialization | ADR-0055 | Critical | ZeroMQ Sockets & BSON Serialization Test | Specified |
