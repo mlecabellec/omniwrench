@@ -14,31 +14,30 @@ The Google Antigravity SDK implements a clean 3-tier layering model separating u
 @startuml
 skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
-skinparam componentStyle uml2
 
-package "Antigravity SDK - Developer Facing" {
-  [Agent] as AGENT
-  [HookRunner] as HOOKS
-  [TriggerRunner] as TRIGGERS
-  [PolicyEngine] as POLICIES
+package "Antigravity SDK Developer Facing" {
+  component "Agent" as AGENT
+  component "HookRunner" as HOOKS
+  component "TriggerRunner" as TRIGGERS
+  component "PolicyEngine" as POLICIES
 }
 
-package "Conversation Management - Session State" {
-  [Conversation] as CONV
-  [StepTracker] as TRACKER
-  [ChatResponse Stream] as STREAM
+package "Conversation Management Session State" {
+  component "Conversation" as CONV
+  component "StepTracker" as TRACKER
+  component "ChatResponse Stream" as STREAM
 }
 
-package "Connection Transport - Harness / IPC" {
-  [ConnectionStrategy] as STRATEGY
-  [LocalHarnessProcessManager] as PROC
-  [WebSocket Client] as WS
+package "Connection Transport Harness IPC" {
+  component "ConnectionStrategy" as STRATEGY
+  component "LocalHarnessProcessManager" as PROC
+  component "WebSocket Client" as WS
 }
 
-cloud "Execution Backends" {
-  [localharness Go Engine] as HARNESS
-  [Gemini / Vertex AI] as GEMINI
-  [MCP Servers Stdio/SSE] as MCP
+package "Execution Backends" {
+  component "localharness Go Engine" as HARNESS
+  component "Gemini Vertex AI" as GEMINI
+  component "MCP Servers Stdio SSE" as MCP
 }
 
 AGENT --> HOOKS : Dispatches lifecycle events
@@ -222,7 +221,7 @@ skinparam defaultFontColor #ffffff
 
 actor User
 participant "Root Agent" as Root
-participant "Subagent (Code Reviewer)" as Sub
+participant "Subagent Code Reviewer" as Sub
 participant "Tool Registry" as Tools
 
 User -> Root: "Audit documentation in src/"

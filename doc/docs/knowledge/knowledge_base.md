@@ -237,3 +237,56 @@ This document stores persistent project knowledge, architectural decisions, and 
   - **Living Traceability Matrix**: PlantUML diagrams within `mkdocs-kit` dynamically map:
     `Goal` -> `Requirement (REQ-*)` -> `Architecture Component` -> `Task (TSK-*)` -> `Unit/Integration Test (TEST-*)`
   - **Quality Gates**: A task is only marked `Completed` when all associated tests pass (`mvn clean test`), PMD violations are 0, and documentation builds cleanly (`helpers/build-docs.sh build`).
+
+### ADR-0024: JavaParser as Core Static Analysis and AST Refactoring Engine
+- **Status**: Accepted (2026-08-22)
+- **Context**: Code refactoring, automated imports cleanup, dead code pruning, and architectural rule verification require parsing source files into structured ASTs, resolving symbols, and outputting clean formatted source code without losing comments or formatting.
+- **Decision**: Adopted **JavaParser (3.25+)** with JavaSymbolSolver in `omniwrench-tools`:
+  - **Zero Native Dependencies**: Pure Java implementation running portably on Debian 11, Debian 12, and SLES 15 SP6 without JNI or FFM runtime prerequisites.
+  - **Full Java 21 Syntax**: Parses records, sealed classes/interfaces, pattern matching for switch, and virtual threads.
+  - **Lexical Preservation**: Uses `LexicalPreservingPrinter` to ensure AST refactorings modify only targeted code nodes while preserving developer comments, whitespace, and formatting intact (CS-0020).
+  - **AstAnalysisTool Integration**: Implements methods for class hierarchy extraction, method symbol resolution, unused import removal, and nullability rule checking (`Objects.requireNonNull` insertion).
+
+### ADR-0025: Dual Distribution Packaging (GraalVM Native Image + Executable Fat JAR)
+- **Status**: Accepted (2026-08-22)
+- **Context**: Interactive CLI and TUI workflows demand instantaneous sub-50ms process startup and low memory footprint, while industrial server environments (Debian 11/12, SLES 15 SP6) require reliable background service daemons with standard JRE diagnostics.
+- **Decision**: Implemented a **Dual Distribution Packaging** strategy:
+  - **GraalVM Native Image (`omniwrench` binary)**: Compiled ahead-of-time (AOT) via `native-maven-plugin` on GraalVM Java 21:
+    * Sub-20ms instant startup for command-line and interactive Lanterna TUI operations.
+    * Standalone static executable with zero external JRE prerequisites.
+    * Configured with reflection configuration hints for Jackson, Lanterna, and Picocli.
+  - **Spring Boot Executable Fat JAR (`omniwrench-app.jar`)**: Standard JVM deployment artifact:
+    * Runs on standard OpenJDK 17/21 runtime.
+    * Bundles embedded Web & WebSocket servers, Spring Security, and dynamic plugin classloaders.
+  - **Industrial Systemd Unit Service (`omniwrench.service`)**: Standard daemon unit file managing background dual-mode server instances on Debian and SUSE servers.
+
+### ADR-0026: Built-in Interactive Neon Diff Viewer with Hunk-by-Hunk Control
+- **Status**: Accepted (2026-08-22)
+- **Context**: Autonomous agent refactorings and code edits must be verified with extreme precision by developers before committing (CS-0070). Relying on plain text unified diffs is slow and error-prone for multi-file edits.
+- **Decision**: Implemented a **Built-in Interactive Neon Diff Viewer** (`DiffViewerPanel` in `omniwrench-tui` and Monaco Diff in `omniwrench-web`):
+  - **Side-by-Side & Unified Toggle**: Toggle between dual-column split view (Original vs Proposed) and single-column unified diff via `Tab` key.
+  - **Syntax & Change Highlighting**: Cyberpunk neon color palette (Neon Cyan `#00ffcc` for additions, Hot Magenta `#ff007f` for deletions, Deep Violet `#7928ca` for line numbers).
+  - **Hunk-Level Interactivity**: Keyboard shortcuts to navigate hunks (`j`/`k`, `n`/`p`), stage individual hunks (`s`), discard hunks (`d`), or edit in place (`e`).
+  - **Clearance Modal (CS-0070 Enforcement)**: Pressing `c` opens a mandatory approval dialog requiring explicit `[Y]es / [N]o` confirmation with full impact summary and test results before `git commit` is dispatched.
+
+### ADR-0027: Hybrid Local BM25 and Embedded Vector RAG
+- **Status**: Accepted (2026-08-22)
+- **Context**: Codebases contain both exact keywords/symbols (class names, method signatures, error messages) and semantic concepts (architectural intent, business logic, refactoring rationale). Relying solely on keyword search misses conceptual relationships, while pure vector search is inaccurate for exact identifier lookups.
+- **Decision**: Implemented a **Hybrid Local BM25 + Embedded Vector RAG Engine** in `omniwrench-core` stored locally in `.omniwrench/index/`:
+  - **Keyword / Symbol Indexing (BM25)**: SQLite FTS5 / Lucene indexes code tokens, file paths, class names, method signatures, and ADR documents with sub-millisecond lexical matching.
+  - **Semantic Vector Store**: Local embedded vector indexing (via `sqlite-vec` or local ONNX runtime embeddings) generates dense embeddings for code chunks, doc sections, and task histories with zero cloud dependencies.
+  - **Reciprocal Rank Fusion (RRF)**: Merges BM25 and Vector search result sets using RRF scoring:
+    $$RRF(d) = \sum_{m \in \{BM25, Vector\}} \frac{1}{k + rank_m(d)}$$
+  - **Context-Window Injector (`ContextInjector`)**: Automatically retrieves the top-K most relevant snippets and ADRs to augment prompt context before model dispatch.
+
+### ADR-0028: Comprehensive 5-Stage Verification and Quality Gate Protocol
+- **Status**: Accepted (2026-08-22)
+- **Context**: Autonomous AI modifications can subtly introduce compiler regressions, styling drift, broken links in documentation, or unintended interface deletions. Strict end-to-end verification gates are mandatory across all tasks.
+- **Decision**: Implemented the **Comprehensive 5-Stage Verification Gate** enforced by `QualityGateService` and `omniwrench-helper.sh verify`:
+  - **Stage 1 — Clean Compilation (`mvn compile`)**: All modules must compile under Java 21 with `-parameters` and zero compilation warnings/errors.
+  - **Stage 2 — Static Analysis Enforcement**:
+    * Checkstyle must achieve 0 fatal violations against `checkstyle.xml` (enforcing CS-0030: Javadoc, no magic numbers, no variable hiding, no `var`).
+    * PMD must achieve 0 violations against `pmd-ruleset.xml`.
+  - **Stage 3 — Test Suite Execution (`mvn test`)**: 100% pass rate on all JUnit 5 unit and integration tests with zero skipped or failing tests.
+  - **Stage 4 — Documentation Compilation (`helpers/build-docs.sh build`)**: Full `mkdocs-kit` markdown compilation, PlantUML diagram rendering, and PDF generation must complete with zero broken links and zero diagram errors.
+  - **Stage 5 — Deletion & Impact Analysis (CS-0070)**: Automated diff analysis verifies that no public methods or interfaces have been deleted without explicit migration rationale.
