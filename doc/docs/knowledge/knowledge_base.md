@@ -537,3 +537,15 @@ This document stores persistent project knowledge, architectural decisions, and 
     * **Slash Commands Provider**: `/plan`, `/run`, `/diff`, `/commit`, `/model`, `/swarm`, `/export`, `/plugin`, `/theme`, `/recover`.
     * **Workspace File Path Provider**: Fuzzy-searches workspace repository files via cached symbol graph.
     * **Model & Swarm Provider**: Autocompletes configured model tiers (`TRIVIAL`..`EXPERT`) and subagent roles.
+
+### ADR-0054: AES-256-GCM Encrypted Secret Vault and OS Keyring Integration
+- **Status**: Accepted (2026-08-22)
+- **Context**: Omniwrench requires access to various sensitive credentials (OpenAI, Anthropic, Gemini, DeepSeek, GitHub/Gitea tokens, Home Assistant access tokens). Storing plain API keys in source control or cleartext files is a critical security vulnerability.
+- **Decision**: Implemented **AES-256-GCM Encrypted Secret Vault and OS Keyring Engine** in `omniwrench-core`:
+  - **Vault Storage File**: `.omniwrench/vault.enc` storing authenticated AES-256-GCM encrypted key-value pairs.
+  - **Key Derivation Function**: **Argon2id** (memory-hard, GPU/ASIC resistant) deriving the 256-bit AES master encryption key from user passphrase.
+  - **Transparent Fallback Hierarchy**:
+    1. Direct Environment Variable lookup (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`).
+    2. OS Native Keyring lookup (via `libsecret` on Linux / GNOME / KDE, macOS Keychain, Windows Credential Manager).
+    3. Encrypted `.omniwrench/vault.enc` file (prompts for master password on first access or caches in session memory).
+  - **CLI / TUI Secret Management**: Interactive `/vault set <key> <value>`, `/vault list`, `/vault delete <key>`.

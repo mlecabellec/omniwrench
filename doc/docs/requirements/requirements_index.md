@@ -84,3 +84,4 @@ This register details all formal system requirements for Omniwrench with full tr
 | [`REQ-00093`](REQ-00093.md) | Advanced File Operations & Binary Transformation Tool Plugin | ADR-0051 | Critical | File Tree / Hex / Diff / Grep Test | Specified |
 | [`REQ-00094`](REQ-00094.md) | Asynchronous Background Tool Execution & Callbacks | ADR-0052 | High | Virtual Thread Background Tool Test | Specified |
 | [`REQ-00095`](REQ-00095.md) | Ultra-Precise OpenAPI & JSON Schema Function Descriptions | ADR-0053 | Critical | OpenAPI 3.1 Schema & Validation Test | Specified |
+| [`REQ-00096`](REQ-00096.md) | AES-256-GCM Encrypted Secret Vault & OS Keyring | ADR-0054 | Critical | Automated Vault Encryption, Keyring & Fallback Test | Specified |
