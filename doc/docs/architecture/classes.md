@@ -1,6 +1,6 @@
-# Class Diagrams & Patterns
+# Class Diagrams & Architectural Design Patterns
 
-Omniwrench applies Object-Oriented patterns to manage lifecycle complexity in strict adherence to **CS-0030.6**.
+Omniwrench applies robust Object-Oriented and Functional patterns across its domain, engine, AI adapters, and tooling layers in strict adherence to **CS-0030.6**.
 
 ```plantuml
 @startuml
@@ -14,53 +14,73 @@ interface Tool {
 }
 
 class FileOperationsTool implements Tool {
-  - definition : ToolDefinition
   + execute(context: SessionContext, args: Map<String, Object>) : ToolInvocation
 }
 
-class CommandExecutionTool implements Tool {
-  - definition : ToolDefinition
+class JavaParserAstTool implements Tool {
   + execute(context: SessionContext, args: Map<String, Object>) : ToolInvocation
 }
 
-class ToolRegistry {
-  - registeredTools : Map<String, Tool>
-  + registerTool(tool: Tool) : void
-  + getTool(name: String) : Optional<Tool>
-  + getAllDefinitions() : List<ToolDefinition>
+interface BackendAdapter<T> {
+  + getProviderId() : String
+  + execute(request: ModelRequest<T>) : ModelResponse<T>
+  + executeAsync(request: ModelRequest<T>) : CompletableFuture<ModelResponse<T>>
+}
+
+class OpenAiCompatibleAdapter implements BackendAdapter {
+  + execute(request: ModelRequest<ChatReasoning>) : ModelResponse<ChatReasoning>
+}
+
+class SmartModelRouter {
+  - adapters : Map<String, BackendAdapter<?>>
+  + route(request: ModelRequest<?>) : BackendAdapter<?>
+}
+
+interface ProtocolBridge {
+  + getProtocolId() : String
+  + connect() : CompletableFuture<Void>
+  + publish(message: ProtocolMessage) : CompletableFuture<Boolean>
+}
+
+class HomeAssistantTool implements ProtocolBridge, Tool {
+  + connect() : CompletableFuture<Void>
+  + execute(context: SessionContext, args: Map<String, Object>) : ToolInvocation
+}
+
+class ReactorEventBus {
+  - eventSink : Sinks.Many<Object>
+  + publish(event: Object) : void
+  + onEvent(type: Class<E>) : Flux<E>
+}
+
+class SwarmCoordinator {
+  - activeActors : Map<String, SwarmWorker>
+  + broadcast(envelope: SwarmEnvelope) : void
+  + initiateConsensus(topic: String) : CompletableFuture<ConsensusResult>
 }
 
 class AgentEngine {
   - toolRegistry : ToolRegistry
-  - properties : OmniwrenchProperties
-  - agentThreadPool : ExecutorService
+  - smartRouter : SmartModelRouter
+  - eventBus : ReactorEventBus
+  - sessionManager : SessionManager
   + processPrompt(context: SessionContext, prompt: String) : AgentMessage
 }
 
-class SessionContext {
-  - sessionId : String
-  - workspaceRoot : String
-  - messages : List<AgentMessage>
-  + addMessage(message: AgentMessage) : void
-  + getMessages() : List<AgentMessage>
-}
-
-class AgentMessage {
-  - id : String
-  - role : String
-  - content : String
-  - timestamp : Instant
-  - toolInvocations : List<ToolInvocation>
-}
-
-AgentEngine --> ToolRegistry : references
+AgentEngine --> ToolRegistry : resolves
+AgentEngine --> SmartModelRouter : routes
+AgentEngine --> ReactorEventBus : publishes
+AgentEngine --> SwarmCoordinator : delegates
+SmartModelRouter o-- BackendAdapter : delegates
 ToolRegistry o-- Tool : aggregates
-AgentEngine ..> SessionContext : modifies
-SessionContext o-- AgentMessage : contains
 @enduml
 ```
 
-## Pattern Applications
-- **Strategy Pattern (`Tool`)**: Concrete execution strategies (`FileOperationsTool`, `CommandExecutionTool`) encapsulated behind a common interface.
-- **Factory Pattern (`AgentMessage.of()`, `SessionContext.createDefault()`)**: Standardized, validated factory instantiation methods.
-- **Immutability Contract**: Domain data carriers (`AgentMessage`, `ToolDefinition`, `ToolInvocation`) are strictly final with unmodifiable internal collections.
+## Design Pattern Applications
+
+- **Strategy Pattern (`Tool`, `BackendAdapter`)**: Concrete execution strategies (`FileOperationsTool`, `JavaParserAstTool`, `OpenAiCompatibleAdapter`) encapsulated behind typed SPI contracts.
+- **Router Pattern (`SmartModelRouter`)**: Dynamic rule-based request routing optimizing between cloud API cost, latency, and reasoning capability.
+- **Actor Pattern (`SwarmCoordinator`, `SwarmWorker`)**: Virtual-thread actor channels exchanging immutable envelopes (`SwarmEnvelope`) with isolated mailboxes and deadlock timeouts.
+- **Reactive Observer Pattern (`ReactorEventBus`)**: Decoupled, non-blocking pub/sub message mesh backed by Project Reactor multicast Sinks.
+- **Factory & Record Immutability**: All data transfer objects (`AgentMessage`, `ProtocolMessage`, `ModelRequest`, `ToolDefinition`) are implemented as immutable records with defensive copying.
+

@@ -35,6 +35,8 @@ package "omniwrench-ai (AI SPI & Adapters)" as MOD_AI {
 package "omniwrench-tools (Tool Implementations)" as MOD_TOOLS {
   [FileOperationsTool] as FILE_TOOL
   [CommandExecutionTool] as CMD_TOOL
+  [HomeAssistantTool] as HA_TOOL
+  [JavaParserAstTool] as AST_TOOL
 }
 
 package "omniwrench-core (Engine & Domain)" as MOD_CORE {
@@ -42,6 +44,8 @@ package "omniwrench-core (Engine & Domain)" as MOD_CORE {
   [SessionManager] as SESS_MGR
   [ToolRegistry] as TOOL_REG
   [Tool] as TOOL_SPI
+  [ProtocolBridge] as PROTO_SPI
+  [ReactorEventBus] as EVENT_BUS
   [SessionContext] as SESS_CTX
   [AgentMessage] as MSG_MODEL
   [OmniwrenchProperties] as PROPS
