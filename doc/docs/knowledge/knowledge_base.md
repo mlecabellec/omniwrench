@@ -290,3 +290,16 @@ This document stores persistent project knowledge, architectural decisions, and 
   - **Stage 3 — Test Suite Execution (`mvn test`)**: 100% pass rate on all JUnit 5 unit and integration tests with zero skipped or failing tests.
   - **Stage 4 — Documentation Compilation (`helpers/build-docs.sh build`)**: Full `mkdocs-kit` markdown compilation, PlantUML diagram rendering, and PDF generation must complete with zero broken links and zero diagram errors.
   - **Stage 5 — Deletion & Impact Analysis (CS-0070)**: Automated diff analysis verifies that no public methods or interfaces have been deleted without explicit migration rationale.
+
+### ADR-0029: Pluggable Protocol Abstraction SPI and Home Assistant Integration
+- **Status**: Accepted (2026-08-22)
+- **Context**: Specialized industrial protocols are deprioritized for the initial milestone in favor of universal web protocols (HTTP/HTTPS/REST/WebSocket) and home/environment automation (Home Assistant), backed by a future-proof pluggable protocol abstraction layer.
+- **Decision**: Implemented the **Pluggable Protocol Abstraction SPI** (`ProtocolAdapter`) and **Home Assistant Bridge**:
+  - **Universal Web Client (`HttpClientTool` / `WebSocketClientBridge`)**: Reactive, non-blocking HTTP/HTTPS/REST client with JSON schema validation, Bearer/Basic/API-Key authentication, and bi-directional WebSocket connection pooling.
+  - **Home Assistant Interface (`HomeAssistantTool`)**:
+    * Full integration with Home Assistant REST API (`/api/states`, `/api/services`, `/api/events`).
+    * WebSocket API client subscribing to real-time state changes, device discovery, and automation trigger events.
+    * Entity state querying, service calls (lights, climate, switches, covers), and telemetry ingestion.
+  - **Pluggable Protocol SPI (`ProtocolBridge`)**:
+    * Generic lifecycle contract (`connect()`, `disconnect()`, `subscribe()`, `publish()`, `invoke()`).
+    * Protocol plugins (e.g. MQTT, Modbus, CoAP, BLE, Zigbee) register as Spring beans or ServiceLoader SPIs, seamlessly bridging into the agent tool registry and event bus.

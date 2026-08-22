@@ -14,44 +14,45 @@ The Google Antigravity SDK implements a clean 3-tier layering model separating u
 @startuml
 skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
+skinparam componentStyle uml2
 
-package "Antigravity SDK Developer Facing" {
-  component "Agent" as AGENT
-  component "HookRunner" as HOOKS
-  component "TriggerRunner" as TRIGGERS
-  component "PolicyEngine" as POLICIES
+rectangle "Antigravity SDK Developer Facing" {
+  [Agent] as AGENT
+  [HookRunner] as HOOKS
+  [TriggerRunner] as TRIGGERS
+  [PolicyEngine] as POLICIES
 }
 
-package "Conversation Management Session State" {
-  component "Conversation" as CONV
-  component "StepTracker" as TRACKER
-  component "ChatResponse Stream" as STREAM
+rectangle "Conversation Management Session State" {
+  [Conversation] as CONV
+  [StepTracker] as TRACKER
+  [ChatResponseStream] as STREAM
 }
 
-package "Connection Transport Harness IPC" {
-  component "ConnectionStrategy" as STRATEGY
-  component "LocalHarnessProcessManager" as PROC
-  component "WebSocket Client" as WS
+rectangle "Connection Transport Harness IPC" {
+  [ConnectionStrategy] as STRATEGY
+  [LocalHarnessProcessManager] as PROC
+  [WebSocketClient] as WS
 }
 
-package "Execution Backends" {
-  component "localharness Go Engine" as HARNESS
-  component "Gemini Vertex AI" as GEMINI
-  component "MCP Servers Stdio SSE" as MCP
+rectangle "Execution Backends" {
+  [LocalHarnessGoEngine] as HARNESS
+  [GeminiVertexAI] as GEMINI
+  [McpServers] as MCP
 }
 
 AGENT --> HOOKS : Dispatches lifecycle events
 AGENT --> TRIGGERS : Runs background schedules
 AGENT --> POLICIES : Evaluates execution rules
-AGENT --> CONV : Creates & wraps session
+AGENT --> CONV : Creates and wraps session
 CONV --> TRACKER : Records Step history
 CONV --> STREAM : Exposes multiplexed cursors
 CONV --> STRATEGY : Dispatches requests
-STRATEGY --> PROC : Launches binary & handshakes
+STRATEGY --> PROC : Launches binary and handshakes
 STRATEGY --> WS : Connects full-duplex socket
 PROC --> HARNESS : Spawns subprocess
-WS --> HARNESS : Exchanges JSON/Proto frames
-HARNESS --> GEMINI : Model inference & function calling
+WS --> HARNESS : Exchanges JSON Proto frames
+HARNESS --> GEMINI : Model inference and function calling
 HARNESS --> MCP : Invokes external tools
 @enduml
 ```
