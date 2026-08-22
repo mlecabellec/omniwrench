@@ -81,32 +81,32 @@ MCP_HOST --> TOOL_REG : Exposes Tools
 ## Detailed Component Catalog
 
 ### 1. Presentation Tier (`omniwrench-tui` & `omniwrench-web`)
-- **`OmniwrenchTuiDashboard`**: Multi-pane Lanterna terminal dashboard managing focus, input prompts, status pills, and interactive modals (`ADR-0005`).
-- **`TerminalRenderer`**: Context-adaptive ANSI layout manager handling window resizing and responsive panel folding (`ADR-0013`).
-- **`NeonDiffViewer`**: Side-by-side terminal diff inspector with hunk-by-hunk staging (`s`) and reverting (`r`) shortcuts (`ADR-0026`).
-- **`ThemeEngine`**: Dynamic theme loader quantizing 24-bit TrueColor palettes into 256/16 ANSI codes with hot-switchable JSON themes (`ADR-0034`).
+- **[`OmniwrenchTuiDashboard`](components/OmniwrenchTuiDashboard.md)**: Multi-pane Lanterna terminal dashboard managing focus, input prompts, status pills, and interactive modals (`ADR-0005`).
+- **[`TerminalRenderer`](components/TerminalRenderer.md)**: Context-adaptive ANSI layout manager handling window resizing and responsive panel folding (`ADR-0013`).
+- **[`NeonDiffViewer`](components/NeonDiffViewer.md)**: Side-by-side terminal diff inspector with hunk-by-hunk staging (`s`) and reverting (`r`) shortcuts (`ADR-0026`).
+- **[`ThemeEngine`](components/ThemeEngine.md)**: Dynamic theme loader quantizing 24-bit TrueColor palettes into 256/16 ANSI codes with hot-switchable JSON themes (`ADR-0034`).
 - **`AgentController` & `StatusController`**: Spring Boot REST controllers exposing session management, dialogues, and system health (`ADR-0011`).
-- **`WebSocketTelemetry`**: Real-time STOMP/WebSocket event streaming hub broadcasting agent thoughts, subagent states, and execution DAGs (`ADR-0018`).
+- **[`WebSocketTelemetry`](components/WebSocketTelemetry.md)**: Real-time STOMP/WebSocket event streaming hub broadcasting agent thoughts, subagent states, and execution DAGs (`ADR-0018`).
 
 ### 2. Core Engine Tier (`omniwrench-core`)
-- **`AgentEngine`**: Asynchronous orchestrator executing the hybrid reasoning loop (Single-Step vs Plan-and-Execute DAG) (`ADR-0008`).
-- **`SessionManager`**: Atomic JSON entity store managing conversation sessions in `.omniwrench/sessions/{id}.json` without arrays (`ADR-0009`).
-- **`ReactorEventBus`**: High-performance Project Reactor `Sinks.Many` reactive event stream with backpressure and replay (`ADR-0030`).
-- **`ToolRegistry`**: Dynamic thread-safe registry discovering built-in tools and external plugin JARs via `ServiceLoader` (`ADR-0010`).
+- **[`AgentEngine`](components/AgentEngine.md)**: Asynchronous orchestrator executing the hybrid reasoning loop (Single-Step vs Plan-and-Execute DAG) (`ADR-0008`).
+- **[`SessionManager`](components/SessionManager.md)**: Atomic JSON entity store managing conversation sessions in `.omniwrench/sessions/{id}.json` without arrays (`ADR-0009`).
+- **[`ReactorEventBus`](components/ReactorEventBus.md)**: High-performance Project Reactor `Sinks.Many` reactive event stream with backpressure and replay (`ADR-0030`).
+- **[`ToolRegistry`](components/ToolRegistry.md)**: Dynamic thread-safe registry discovering built-in tools and external plugin JARs via `ServiceLoader` (`ADR-0010`).
 - **`SwarmCoordinator` & `ConsensusCoordinator`**: Dynamic hybrid swarm engine running virtual-thread actor loops with quorum voting (`ADR-0017`, `ADR-0035`).
-- **`TaskDAGScheduler`**: Task checkpointing engine managing dependency graphs in `.omniwrench/tasks/{id}.json` with auto-resume (`ADR-0021`).
-- **`CompactionDreamingWorker`**: Background worker triggering generational context dreaming and epoch rotation on token budgets (`ADR-0033`).
-- **`SecurityGuardrailsEngine`**: 9-level command safety evaluator enforcing human clearance for destructive actions per `CS-0070` (`ADR-0020`).
+- **[`TaskDAGScheduler`](components/TaskDAGScheduler.md)**: Task checkpointing engine managing dependency graphs in `.omniwrench/tasks/{id}.json` with auto-resume (`ADR-0021`).
+- **[`CompactionDreamingWorker`](components/CompactionDreamingWorker.md)**: Background worker triggering generational context dreaming and epoch rotation on token budgets (`ADR-0033`).
+- **[`SecurityGuardrailsEngine`](components/SecurityGuardrailsEngine.md)**: 9-level command safety evaluator enforcing human clearance for destructive actions per `CS-0070` (`ADR-0020`).
 
 ### 3. AI & Retrieval Tier (`omniwrench-ai`)
-- **`SmartModelRouter`**: Cost- and latency-optimized router dynamically selecting model providers based on prompt complexity tiers (`ADR-0019`).
+- **[`SmartModelRouter`](components/SmartModelRouter.md)**: Cost- and latency-optimized router dynamically selecting model providers based on prompt complexity tiers (`ADR-0019`).
 - **`OpenAiCompatibleAdapter` & `LocalLlamaAdapter`**: Concrete implementations of `BackendAdapter<MediaType.ChatReasoning>` supporting SSE streaming (`ADR-0004`, `ADR-0015`).
-- **`HybridRagEngine`**: Fast local BM25 keyword matching + embedded vector search fused via Reciprocal Rank Fusion (`ADR-0027`).
+- **[`HybridRagEngine`](components/HybridRagEngine.md)**: Fast local BM25 keyword matching + embedded vector search fused via Reciprocal Rank Fusion (`ADR-0027`).
 
 ### 4. Tools & Protocol Tier (`omniwrench-tools`)
 - **`FileOperationsTool` & `CommandExecutionTool`**: Sandboxed workspace file manipulations and bounded shell process executions (`ADR-0007`).
-- **`JavaParserAstTool`**: AST analysis and comment-safe refactoring engine utilizing JavaParser with `LexicalPreservingPrinter` (`ADR-0024`).
-- **`GitOperationsTool`**: Clean Git integration providing diffs, staging, commit generation, and remote synchronization (`ADR-0007`).
-- **`HomeAssistantTool`**: Pluggable protocol bridge interfacing Home Assistant REST and WebSocket APIs (`ADR-0029`).
+- **[`JavaParserAstTool`](components/JavaParserAstTool.md)**: AST analysis and comment-safe refactoring engine utilizing JavaParser with `LexicalPreservingPrinter` (`ADR-0024`).
+- **[`GitOperationsTool`](components/GitOperationsTool.md)**: Clean Git integration providing diffs, staging, commit generation, and remote synchronization (`ADR-0007`).
+- **[`HomeAssistantTool`](components/HomeAssistantTool.md)**: Pluggable protocol bridge interfacing Home Assistant REST and WebSocket APIs (`ADR-0029`).
 - **`McpClientManager` & `McpServerHost`**: Dual Model Context Protocol engine connecting to external Stdio/SSE MCP servers and serving Omniwrench tools (`ADR-0036`).
 
