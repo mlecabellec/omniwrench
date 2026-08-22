@@ -2,34 +2,226 @@ name: Omniwrench CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, main ]
+    tags:
+      - 'v*.*.*'
   pull_request:
-    branches: [ master ]
+    branches: [ master, main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
 
 jobs:
-  quality-and-test:
-    name: Code Quality & Multi-Module Tests
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 1: Compile, Static Analysis & Unit Tests
+  # ─────────────────────────────────────────────────────────────────
+  test:
+    name: Build, Analyse & Test
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up Java 21
+      - name: Set up Java ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
 
-      - name: Compile and Run All Module Tests
-        run: mvn clean test --batch-mode
+      - name: Compile all modules
+        run: mvn clean compile --batch-mode -q
 
-  docs-build:
-    name: MkDocs-Kit Documentation & PlantUML Build
+      - name: Run Checkstyle (all modules)
+        run: mvn checkstyle:check --batch-mode -q || true
+
+      - name: Run PMD (all modules)
+        run: mvn pmd:check --batch-mode -q || true
+
+      - name: Run all unit tests
+        run: mvn test --batch-mode
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            **/target/surefire-reports/*.xml
+            **/target/surefire-reports/*.txt
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 2: Package Fat JAR Artifact
+  # ─────────────────────────────────────────────────────────────────
+  package:
+    name: Package Fat JAR
     runs-on: ubuntu-latest
+    needs: test
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Documentation Site & PDF
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Build Spring Boot Fat JAR (skip tests)
+        run: mvn package -DskipTests --batch-mode -q
+
+      - name: Locate produced JAR
+        id: find-jar
+        run: |
+          JAR=$(find omniwrench-app/target -name "*.jar" ! -name "*plain*" | head -1)
+          echo "jar_path=$JAR" >> "$GITHUB_OUTPUT"
+          echo "jar_name=$(basename $JAR)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Fat JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: omniwrench-fat-jar
+          path: ${{ steps.find-jar.outputs.jar_path }}
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 3: Build Documentation HTML + PDF
+  # ─────────────────────────────────────────────────────────────────
+  docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            plantuml \
+            graphviz \
+            libpango-1.0-0 \
+            libharfbuzz0b \
+            libpangoft2-1.0-0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Clone mkdocs-kit
+        run: git clone --depth=1 https://github.com/mlecabellec/mkdocs-kit.git .cache/mkdocs-kit
+
+      - name: Install Python documentation dependencies
+        run: |
+          pip install --upgrade pip -q
+          pip install "setuptools<82.0.0" -q
+          pip install mkdocs mkdocs-material weasyprint wireviz nwdiag bit_field -q
+          pip install -e .cache/mkdocs-kit -q
+
+      - name: Build documentation site and PDF
         run: ./helpers/build-docs.sh build
+
+      - name: Upload HTML documentation site
+        uses: actions/upload-artifact@v4
+        with:
+          name: omniwrench-docs-html
+          path: doc/site/
+          retention-days: 30
+
+      - name: Upload PDF manual
+        uses: actions/upload-artifact@v4
+        with:
+          name: omniwrench-docs-pdf
+          path: doc/site/*.pdf
+          if-no-files-found: warn
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 4: GitHub Release on version tags
+  # ─────────────────────────────────────────────────────────────────
+  release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs: [ test, package, docs ]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Fat JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: omniwrench-fat-jar
+          path: release-assets/
+
+      - name: Download HTML site
+        uses: actions/download-artifact@v4
+        with:
+          name: omniwrench-docs-html
+          path: release-assets/site/
+
+      - name: Download PDF manual
+        uses: actions/download-artifact@v4
+        with:
+          name: omniwrench-docs-pdf
+          path: release-assets/
+
+      - name: Archive documentation site as zip
+        run: |
+          cd release-assets
+          zip -r omniwrench-docs-site-${{ github.ref_name }}.zip site/
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Omniwrench ${{ github.ref_name }}"
+          body: |
+            ## Omniwrench ${{ github.ref_name }}
+
+            ### Released Artifacts
+
+            | File | Description |
+            |---|---|
+            | `omniwrench-app-*.jar` | Spring Boot fat JAR — runs TUI and Web modes |
+            | `omniwrench-docs-site-*.zip` | Full HTML documentation site |
+            | `omniwrench-manual.pdf` | PDF reference manual |
+
+            ### Usage
+
+            ```bash
+            # TUI interactive mode
+            java -jar omniwrench-app-${{ steps.version.outputs.version }}.jar --tui
+
+            # Web / REST API server mode
+            java -jar omniwrench-app-${{ steps.version.outputs.version }}.jar --server
+            ```
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            release-assets/*.jar
+            release-assets/*.zip
+            release-assets/*.pdf
