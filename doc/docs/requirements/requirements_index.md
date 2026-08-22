@@ -87,3 +87,4 @@ This register details all formal system requirements for Omniwrench with full tr
 | [`REQ-00096`](REQ-00096.md) | AES-256-GCM Encrypted Secret Vault & OS Keyring | ADR-0054 | Critical | Automated Vault Encryption, Keyring & Fallback Test | Specified |
 | [`REQ-00097`](REQ-00097.md) | ZeroMQ Transport Mesh with BSON Serialization | ADR-0055 | Critical | ZeroMQ Sockets & BSON Serialization Test | Specified |
 | [`REQ-00098`](REQ-00098.md) | Asynchronous Java NIO WatchService & Debounced File Watcher | ADR-0056 | High | Automated File Watcher Event Aggregation & Debounce Test | Specified |
+| [`REQ-00099`](REQ-00099.md) | XTerm-256 Color Palette TUI Visual Theming Engine | ADR-0057 | Medium | Theme Hot-Reload, F6 Picker Popup & XTerm-256 Token Validation Test | Specified |

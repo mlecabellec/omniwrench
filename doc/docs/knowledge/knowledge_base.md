@@ -574,3 +574,13 @@ This document stores persistent project knowledge, architectural decisions, and 
   - **Trailing Debounce Aggregator**: 150ms trailing debounce window (`DEBOUNCE_WINDOW_MS = 150`) aggregating rapid bursts of file modification events into single consolidated change sets.
   - **GitIgnore & Artifact Exclusion Filter**: Transparently parses root and subfolder `.gitignore` files + default exclude patterns (`target/`, `.git/`, `.idea/`, `.omniwrench/cache/`, `node_modules/`).
   - **Incremental Indexing Pipeline**: Triggers AST symbol re-parsing (`JavaParserAstTool`), SQLite graph updates (`symbols.db`), and reactive event emission via `ReactorEventBus`.
+
+### ADR-0057: XTerm-256 Color Palette for TUI Visual Theming Engine
+- **Status**: Accepted (2026-08-22)
+- **Context**: TUI must render consistently across diverse terminal emulators (iTerm2, GNOME Terminal, PuTTY, xterm, tmux/screen multiplexers, WSL terminals) without relying on 24-bit true-color ANSI support that is absent in many server and legacy environments.
+- **Decision**: Implemented **XTerm-256 Color Palette Theming Engine** in `omniwrench-tui`:
+  - **Color Depth Target**: xterm-256 (`TERM=xterm-256color`) supporting 256-color indexed palette, guaranteeing compatibility across all modern and legacy SSH/terminal environments.
+  - **Bundled Themes**: Four named themes defined in JSON files (`.omniwrench/themes/{name}.json`): `default`, `dark`, `solarized`, `high-contrast`.
+  - **Live Theme Switch**: `F6` key opens a floating theme-picker popup with XTerm-256 palette preview swatches.
+  - **Semantic Color Tokens**: Each theme maps semantic tokens (`primary`, `secondary`, `error`, `warning`, `border`, `selection`, `ghost`) to XTerm-256 color indices for consistent Lanterna attribute application.
+  - **Hot-Reload**: Theme JSON files are watched by the file watcher (`ADR-0056`) and applied live without restart.

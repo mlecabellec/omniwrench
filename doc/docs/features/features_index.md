@@ -62,4 +62,5 @@ Comprehensive catalog of user-facing and engine-level functional capabilities pr
 - **`FR-00044` Authenticated Secret Vault & OS Keyring**: Argon2id key derivation and AES-256-GCM encrypted `.omniwrench/vault.enc` with transparent OS keyring fallback (`ADR-0054`).
 - **`FR-00045` ZeroMQ & BSON Swarm IPC Mesh**: High-performance multi-agent messaging over ZeroMQ (PUB/SUB, XPUB/XSUB, REQ/REP, PUSH/PULL, multicast) with binary BSON serialization (`ADR-0055`).
 - **`FR-00046` Debounced Workspace File Watcher**: Asynchronous Java NIO `WatchService` with 150ms trailing debounce and `.gitignore` glob filtering (`ADR-0056`).
+- **`FR-00047` XTerm-256 TUI Theming Engine**: Four bundled JSON themes with semantic color tokens, live `F6` picker popup, and hot-reload via file watcher (`ADR-0057`).
 
