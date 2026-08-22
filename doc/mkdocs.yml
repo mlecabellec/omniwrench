@@ -150,6 +150,7 @@ nav:
           - "REQ-00095": requirements/REQ-00095.md
           - "REQ-00096": requirements/REQ-00096.md
           - "REQ-00097": requirements/REQ-00097.md
+          - "REQ-00098": requirements/REQ-00098.md
   - Features:
       - Features Register: features/features_index.md
   - Use Cases:

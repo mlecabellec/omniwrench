@@ -565,3 +565,12 @@ This document stores persistent project knowledge, architectural decisions, and 
     * `tcp://`: Network socket communication for distributed multi-node subagent clusters.
     * `epgm://` / `pgm://` / UDP: Pragmatic General Multicast for zero-loss multicast agent synchronization.
   - **ZeroMQ Implementation**: Pure Java **JeroMQ** engine for 100% portability with zero native C library dependencies, with optional native libzmq acceleration.
+
+### ADR-0056: Asynchronous Java NIO WatchService and Debounced Workspace File Watcher
+- **Status**: Accepted (2026-08-22)
+- **Context**: Real-time symbol indexing, live diagnostic linting, and TUI file-tree HUD synchronization require instant detection of workspace file modifications without CPU spikes or duplicate event thrashing during rapid saves / batch builds.
+- **Decision**: Implemented **Asynchronous Java NIO WatchService and Debounced Workspace File Watcher** in `omniwrench-core`:
+  - **Asynchronous Watch Loop**: Dedicated daemon Virtual Thread running Java NIO `WatchService` monitoring project workspace root and recursively registered directories.
+  - **Trailing Debounce Aggregator**: 150ms trailing debounce window (`DEBOUNCE_WINDOW_MS = 150`) aggregating rapid bursts of file modification events into single consolidated change sets.
+  - **GitIgnore & Artifact Exclusion Filter**: Transparently parses root and subfolder `.gitignore` files + default exclude patterns (`target/`, `.git/`, `.idea/`, `.omniwrench/cache/`, `node_modules/`).
+  - **Incremental Indexing Pipeline**: Triggers AST symbol re-parsing (`JavaParserAstTool`), SQLite graph updates (`symbols.db`), and reactive event emission via `ReactorEventBus`.
