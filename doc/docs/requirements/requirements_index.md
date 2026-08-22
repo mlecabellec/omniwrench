@@ -64,4 +64,6 @@ This register details all formal system requirements for Omniwrench with full tr
 | `REQ-00079` | SQLite Relational Symbol Graph (`.omniwrench/symbols.db`) | ADR-0038 | High | SQL Symbol Relation Queries Test | Specified |
 | `REQ-00080` | Multi-Format Session Exporter (`md`, `html`, `pdf`, `json`) | ADR-0039 | High | Export Artifact Generation Test | Specified |
 | `REQ-00081` | Autonomous Local Air-Gapped Mode (`--offline`) | ADR-0040 | Critical | Zero Egress Socket Filter Test | Specified |
+| `REQ-00082` | CLI/TUI Dynamic Plugin Manager & Hot Reload (`/plugin`) | ADR-0041 | High | PluginClassLoader Dynamic Reload Test | Specified |
+| `REQ-00083` | Multi-Channel Notification Mesh (OSC 777, Bell, HA Push) | ADR-0042 | Medium | Terminal Escape & Event Push Test | Specified |
 

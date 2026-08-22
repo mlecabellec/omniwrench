@@ -456,3 +456,24 @@ This document stores persistent project knowledge, architectural decisions, and 
     * Disables all external telemetry, remote update checks, and cloud analytics.
     * OpenTelemetry traces write strictly to the local NDJSON file (`.omniwrench/traces.ndjson`).
     * Enforces strict socket connection filters allowing only localhost loopback interfaces (`127.0.0.1`, `::1`) and explicitly configured local network bridges (e.g. Home Assistant LAN IP).
+
+### ADR-0041: CLI/TUI Plugin Manager with Dynamic Hot Reloading
+- **Status**: Accepted (2026-08-22)
+- **Context**: Developers need to install, test, upgrade, and reload custom domain tools (AST analyzers, custom protocols, database connectors) on long-running instances without stopping the server or interrupting active pairing sessions.
+- **Decision**: Implemented a **CLI/TUI Plugin Manager with Dynamic Hot Reloading** in `omniwrench-core`:
+  - **Commands**:
+    * `/plugin list` — Display all loaded tools and their source (`BUILT_IN`, `CLASSPATH`, `DYNAMIC_JAR`).
+    * `/plugin install <url|path>` — Download or copy plugin JAR to `plugins/`, verify integrity (SHA-256 and SPI manifest), and load into a dedicated child `PluginClassLoader`.
+    * `/plugin reload [id]` — Dispose existing classloader, re-scan `plugins/`, and re-instantiate SPI instances into `ToolRegistry` and `ReactorEventBus`.
+    * `/plugin remove <id>` — Unregister tool capabilities, release classloader resources, and purge JAR from `plugins/`.
+  - **Zero Downtime**: Active sessions maintain references to core engine services while newly reloaded tools become immediately available for subsequent turns.
+
+### ADR-0042: Multi-Channel Notification Mesh for Long-Running Tasks and Clearance Alerts
+- **Status**: Accepted (2026-08-22)
+- **Context**: Long-running goals (full test suites, multi-module refactorings, documentation builds) or safety clearance prompts (CS-0070) occur asynchronously while developers may have the terminal in the background or be away from their workstations.
+- **Decision**: Implemented a **Multi-Channel Notification Mesh** in `omniwrench-core` and `omniwrench-tui`:
+  - **1. Terminal OSC Escape Codes**: Emits standard OSC 777 (`\e]777;notify;Omniwrench;{message}\e\\`) and OSC 9 desktop notification sequences recognized by Linux/macOS terminal emulators (WezTerm, Kitty, Ghostty, Alacritty, iTerm2, GNOME Terminal).
+  - **2. Terminal Bell**: Emits ANSI bell (`\a`) on completion or failure.
+  - **3. Home Assistant Push Notification**: When configured, dispatches `notify.notify` service calls over the `HomeAssistantTool` protocol bridge to send actionable push notifications to mobile companion apps.
+  - **4. Subtle Cyberpunk Audio Chimes**: Configurable subtle synthesizer chimes on task completion (`/notify.wav`) and clearance modal display (`/alert.wav`).
+  - **Configurable Suppression**: Enabled by default; toggleable via `/notify on|off` or `omniwrench.tui.notifications.enabled=false`.

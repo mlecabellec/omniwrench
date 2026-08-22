@@ -53,4 +53,6 @@ Comprehensive catalog of user-facing and engine-level functional capabilities pr
 - **`FR-00035` SQLite Relational Symbol Graph**: Embedded relational database (`symbols.db`) with FTS5 search and inotify incremental updates (`ADR-0038`).
 - **`FR-00036` Multi-Format Session Exporter**: Export pairing sessions to Markdown, standalone HTML5, publication PDF, and JSON audit bundles (`ADR-0039`).
 - **`FR-00037` Autonomous Local Air-Gapped Mode**: 100% offline operation (`--offline`) with zero network egress and local LLM routing (`ADR-0040`).
+- **`FR-00038` Dynamic Plugin Manager with Hot Reloading**: Install, remove, and hot-reload plugins via `/plugin` without process restarts (`ADR-0041`).
+- **`FR-00039` Multi-Channel Notification Mesh**: Terminal OSC 777 desktop notifications, ANSI bell, and Home Assistant push alerts (`ADR-0042`).
 
