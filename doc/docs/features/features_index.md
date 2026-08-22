@@ -55,4 +55,6 @@ Comprehensive catalog of user-facing and engine-level functional capabilities pr
 - **`FR-00037` Autonomous Local Air-Gapped Mode**: 100% offline operation (`--offline`) with zero network egress and local LLM routing (`ADR-0040`).
 - **`FR-00038` Dynamic Plugin Manager with Hot Reloading**: Install, remove, and hot-reload plugins via `/plugin` without process restarts (`ADR-0041`).
 - **`FR-00039` Multi-Channel Notification Mesh**: Terminal OSC 777 desktop notifications, ANSI bell, and Home Assistant push alerts (`ADR-0042`).
+- **`FR-00040` Full Cyberpunk HUD Telemetry**: Top header and bottom footer widgets displaying real-time session, model, token, git, swarm, and JVM telemetry (`ADR-0043`).
+- **`FR-00041` Unclean Shutdown Auto-Recovery**: Automatic crash detection with interactive `/recover` prompt restoring exact conversation turns and in-flight tasks (`ADR-0044`).
 

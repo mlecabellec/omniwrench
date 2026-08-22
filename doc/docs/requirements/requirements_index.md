@@ -66,4 +66,6 @@ This register details all formal system requirements for Omniwrench with full tr
 | `REQ-00081` | Autonomous Local Air-Gapped Mode (`--offline`) | ADR-0040 | Critical | Zero Egress Socket Filter Test | Specified |
 | `REQ-00082` | CLI/TUI Dynamic Plugin Manager & Hot Reload (`/plugin`) | ADR-0041 | High | PluginClassLoader Dynamic Reload Test | Specified |
 | `REQ-00083` | Multi-Channel Notification Mesh (OSC 777, Bell, HA Push) | ADR-0042 | Medium | Terminal Escape & Event Push Test | Specified |
+| `REQ-00084` | Full Cyberpunk HUD Telemetry Layout (Header & Footer) | ADR-0043 | High | TUI Header/Footer Widget Render Test | Specified |
+| `REQ-00085` | Unclean Shutdown Detection & State Auto-Recovery | ADR-0044 | Critical | Crash Lockfile & Resume State Test | Specified |
 

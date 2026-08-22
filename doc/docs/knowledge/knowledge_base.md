@@ -477,3 +477,36 @@ This document stores persistent project knowledge, architectural decisions, and 
   - **3. Home Assistant Push Notification**: When configured, dispatches `notify.notify` service calls over the `HomeAssistantTool` protocol bridge to send actionable push notifications to mobile companion apps.
   - **4. Subtle Cyberpunk Audio Chimes**: Configurable subtle synthesizer chimes on task completion (`/notify.wav`) and clearance modal display (`/alert.wav`).
   - **Configurable Suppression**: Enabled by default; toggleable via `/notify on|off` or `omniwrench.tui.notifications.enabled=false`.
+
+### ADR-0043: Full Cyberpunk HUD Telemetry Layout on TUI Header and Footer
+- **Status**: Accepted (2026-08-22)
+- **Context**: Real-time awareness of system state, LLM token expenditure, active subagent swarms, git workspace status, and protocol links provides developers with complete observability during intense coding workflows.
+- **Decision**: Implemented **Full Cyberpunk HUD Telemetry** in `omniwrench-tui`:
+  - **Top Header Bar**:
+    * `[OMNIWRENCH v0.1.0]` (Signature Neon Cyan badge)
+    * `Session: {shortSessionId}` (UUID prefix)
+    * `Mode: DUAL|TUI|WEB` (Pill badge)
+    * `Theme: {themeName}` (F6)
+    * `Model: {provider}/{modelName} [{tier}]` (F2)
+    * `Tokens: {inputTokens}in / {outputTokens}out (${estimatedCost})`
+  - **Bottom Footer Status Bar**:
+    * `Git: {branch} [{*dirty|clean}]`
+    * `Task: {taskId} [{currentStep}/{totalSteps}]`
+    * `Swarm: {activeWorkers} actors`
+    * `JVM: {usedMb}/{maxMb}MB | {activeVirtualThreads} vThreads`
+    * `HA: CONNECTED|DISCONNECTED` (Home Assistant status pill)
+    * `FPS: {currentFps}` (Frame render rate)
+
+### ADR-0044: Unclean Shutdown Detection, Crash Journaling, and State Auto-Recovery
+- **Status**: Accepted (2026-08-22)
+- **Context**: Unexpected process termination (power loss, terminal emulator crash, SIGKILL, OOM) can leave in-flight tasks and conversation sessions in an interrupted state. Recovery must be effortless, deterministic, and safe.
+- **Decision**: Implemented an **Unclean Shutdown Detection and State Auto-Recovery Engine** in `omniwrench-core`:
+  - **Active Session Lock & Heartbeat**:
+    * An atomic lockfile `.omniwrench/active.lock` is created on startup containing `processId`, `sessionId`, `activeTaskId`, and last heartbeat timestamp (`Instant.now()`).
+    * Clean shutdown hook (`Runtime.getRuntime().addShutdownHook`) safely flushes buffers, deletes `active.lock`, and writes `.omniwrench/sessions/{id}/meta.json`.
+  - **Crash Journaling (`.omniwrench/crash/{timestamp}.json`)**:
+    * JVM uncaught exception handler records thread dumps, memory metrics, active tool calls, and in-flight DAG step state.
+  - **Startup Interactive Recovery Prompt**:
+    * On startup, if `active.lock` is present and stale (or points to an aborted session), Omniwrench displays an interactive recovery modal:
+      > *"⚠️ Unclean shutdown detected from session [abc-123] on task [TSK-20260822-005]. Would you like to resume? [Y/n]"*
+    * Accepting restores exact conversation turns, reinstantiates in-flight task DAG steps, and continues execution seamlessly.
