@@ -26,6 +26,19 @@ Comprehensive index of all engineering topics, architectural artifacts, and spec
 
 ---
 
+## 📊 Comparative Analysis & Extraction Reports
+- [Master Reports Index](reports/reports_index.md): Executive summary and cross-project comparison matrix.
+- [Google Antigravity SDK Deep Analysis](reports/antigravity_sdk_analysis.md): 3-tier layering, binary IPC, 9-level policy matrix, hooks, and triggers.
+- [OpenClaw Platform Deep Analysis](reports/openclaw_analysis.md): Multi-session gateway, 3-ring FIFO lanes, channel adapters, and SQLite event sourcing.
+- [OpenCode Engine Deep Analysis](reports/opencode_analysis.md): Solid TUI, Tree-Sitter AST highlighting, LSP client host, JGit shadow snapshots, and prompt caching.
+- [Agent Runtime & Reasoning Report](reports/agent_runtime_and_reasoning_report.md): Safe turn boundary, state machines, thought streaming, and subagent depth limits.
+- [Tooling, MCP & Sandboxing Report](reports/tooling_mcp_and_sandboxing_report.md): Pluggable reflection SPI, stdio/SSE MCP client manager, and SSRF network filters.
+- [UI, TUI & Telemetry Architecture](reports/ui_tui_and_telemetry_report.md): Lanterna double-buffered cyberpunk TUI, responsive split diffs, and OTel tracing spans.
+- [Memory, State & Context Management](reports/memory_context_and_retrieval_report.md): Relational event sourcing, zstd cold-tier archiving, and FTS5 search.
+- [Omniwrench Strategic Implementation Blueprint](reports/omniwrench_implementation_roadmap.md): Architectural gap analysis, Java 21 module designs, and phased roadmap.
+
+---
+
 ## 📜 Quality Standards & Project Rules
 - [Rules Master Index](architecture/rules_index.md): Overview of all constraints.
 - [CS-0010: Quality Standards](architecture/CS-0010.md): Traceability references, naming conventions, and quality gates.

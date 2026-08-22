@@ -1,23 +1,52 @@
-# Project Management & Governance (2026-2029)
+# Goal, Task & Requirements Governance
 
-This document establishes the strict governance, capacity model, and architectural milestones for Omniwrench in alignment with the **Industrial Infrastructure Management 2026-2029** charter.
+This document establishes the strict **Goal-, Task-, Requirement-, and Test-Oriented Governance** system for Omniwrench (ADR-0023), replacing fixed calendar schedules with rigorous outcome-based execution and traceability.
 
 ```plantuml
 @startuml
 skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
+skinparam roundCorner 8
+skinparam shadowing false
 
-gantt
-title Omniwrench & Industrial Infrastructure Roadmap 2026-2029
-dateFormat YYYY-MM-DD
-section Core Engine
-Omniwrench Initial Skeleton       :done,    2026-08-22, 2026-08-30
-Cyberpunk TUI HUD & Stream Engine :active,  2026-08-25, 2026-09-30
-Autonomous Subagent Dispatcher    :         2026-10-01, 2026-12-15
-section Infrastructure Migrations
-Debian 11 & SUSE 15 SP6 Migration :active,  2026-08-01, 2027-06-30
-Hardware Refresh Cycle (€100k/yr) :         2026-01-01, 2029-12-31
-NetApp Storage Replacement        :         2028-06-01, 2029-06-30
+package "Strategic Goals" {
+  [Goal 1: Polyvalent Agent Core] as G1
+  [Goal 2: Multi-Modal AI SPI] as G2
+  [Goal 3: Adaptive Dual HUD] as G3
+  [Goal 4: Infrastructure Operations] as G4
+}
+
+package "Requirements (REQ-*)" {
+  [REQ-00001\nDual Runtime] as REQ1
+  [REQ-00010\nMission Standards] as REQ2
+  [REQ-00020\nTool Registry SPI] as REQ3
+  [REQ-00030\nReasoning Engine] as REQ4
+  [REQ-00040\nAI Adapter SPI] as REQ5
+}
+
+package "Tasks (TSK-*)" {
+  [TSK-001\nMaven Skeleton] as T1 #2b5c3f
+  [TSK-002\nDoc Kit & Rules] as T2 #2b5c3f
+  [TSK-003\nCyberpunk TUI] as T3 #2b5c3f
+  [TSK-004\nSpring Web & WS] as T4 #2b5c3f
+  [TSK-005\nTool Registry] as T5 #2b5c3f
+  [TSK-006\nMulti-Module Refactor] as T6 #2b5c3f
+}
+
+G1 --> REQ1
+G1 --> REQ2
+G1 --> REQ3
+G1 --> REQ4
+G2 --> REQ5
+G3 --> REQ1
+
+REQ1 --> T1
+REQ2 --> T2
+REQ1 --> T3
+REQ1 --> T4
+REQ3 --> T5
+REQ4 --> T5
+REQ1 --> T6
 @enduml
 ```
 

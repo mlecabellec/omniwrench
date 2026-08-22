@@ -44,6 +44,16 @@ nav:
       - Interfaces & SPIs: architecture/interfaces.md
       - File & State Formats: architecture/file_formats.md
       - Configuration Specs: architecture/configuration.md
+  - Comparative Analysis & Reports:
+      - Master Reports Index: reports/reports_index.md
+      - Google Antigravity SDK Analysis: reports/antigravity_sdk_analysis.md
+      - OpenClaw Analysis: reports/openclaw_analysis.md
+      - OpenCode Analysis: reports/opencode_analysis.md
+      - Agent Runtime & Reasoning: reports/agent_runtime_and_reasoning_report.md
+      - Tooling, MCP & Sandboxing: reports/tooling_mcp_and_sandboxing_report.md
+      - UI, TUI & Telemetry: reports/ui_tui_and_telemetry_report.md
+      - Memory & Retrieval: reports/memory_context_and_retrieval_report.md
+      - Omniwrench Implementation Blueprint: reports/omniwrench_implementation_roadmap.md
   - Project Rules & Quality Constraints:
       - Rules Index: architecture/rules_index.md
       - "CS-0010 Quality Standards": architecture/CS-0010.md
@@ -75,5 +85,6 @@ nav:
       - Task TSK-20260822-003: project/tasks/TSK-20260822-003.md
       - Task TSK-20260822-004: project/tasks/TSK-20260822-004.md
       - Task TSK-20260822-005: project/tasks/TSK-20260822-005.md
+      - Task TSK-20260822-006: project/tasks/TSK-20260822-006.md
   - Knowledge Base & Memory:
       - Project Knowledge Base: knowledge/knowledge_base.md

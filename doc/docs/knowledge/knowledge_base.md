@@ -151,3 +151,89 @@ This document stores persistent project knowledge, architectural decisions, and 
   - **`omniwrench-app`**: Spring Boot assembly + main class + plugin loader. Depends on all other modules.
 - **Parent POM**: `omniwrench` (root) defines BOM, shared plugin configuration, Checkstyle, PMD, Surefire, GraalVM native plugin.
 - **Benefit**: `omniwrench-core` and `omniwrench-tools` are usable as standalone libraries without the full Spring Boot stack.
+
+### ADR-0017: Dynamic Hybrid Swarm Multi-Agent Coordination Protocol
+- **Status**: Accepted (2026-08-22)
+- **Context**: Complex multi-stage engineering operations (refactoring, infrastructure migration, test suite synthesis) require specialized subagents that can operate both under top-down task delegation and collaborate peer-to-peer to resolve cross-domain trade-offs.
+- **Decision**: Implemented a **Dynamic Hybrid Swarm** coordination model:
+  - **Hierarchical Tree by Default**: A `LeadOrchestrator` agent decomposes parent tasks into a `TaskDag`, assigns subtasks to specialized ephemeral worker agents (e.g. `CodeReviewer`, `TestRunner`, `InfrastructureSpecialist`), and aggregates their outputs into the root `SessionContext`.
+  - **Dynamic Peer-to-Peer Consensus Channels**: Subagents can establish ephemeral direct communication channels (`SwarmChannel`) to negotiate and achieve consensus without routing all inter-agent traffic through the lead orchestrator.
+  - **Tracing & Isolation**: Every subagent runs within its own sub-session context (`ChildSessionContext`), inheriting global rules and workspace security boundaries, with all inter-agent messaging instrumented as OpenTelemetry trace spans (ADR-0014).
+  - **Lifecycle**: Managed by `SwarmCoordinator` with bounded concurrency matching the bounded thread pool (CS-0040).
+
+### ADR-0018: Embedded Lightweight SPA Dashboard (Svelte / Vue 3)
+- **Status**: Accepted (2026-08-22)
+- **Context**: The web interface needs a responsive, modern cyberpunk dashboard providing real-time chat, tool execution streaming, live task graph visualization, and system telemetry matching the TUI aesthetic.
+- **Decision**: The Web UI is structured as an embedded lightweight Single Page Application (SPA) compiled to static assets and bundled directly into `omniwrench-web/src/main/resources/static`:
+  - **Reactivity & Communication**: Real-time bidirectional communication via WebSocket endpoint `/ws/agent-stream` and REST endpoints `/api/v1/*`.
+  - **Zero-External-Server Runtime**: Spring Boot serves the static SPA bundle directly on port 8080 (or configured port) without requiring a separate Node.js server in production.
+  - **Cyberpunk Dark Theme**: Matches the terminal TUI color palette (neon cyan `#00ffcc`, magenta `#ff007f`, purple `#7928ca`, dark background `#0d0f18`).
+  - **Telemetry & Tracing View**: Visualizes live OpenTelemetry spans and Task DAG status in real time.
+
+### ADR-0019: Cost & Latency Optimized Smart Model Router
+- **Status**: Accepted (2026-08-22)
+- **Context**: Relying exclusively on expensive frontier models for trivial tasks wastes budget and increases latency, while using small local models for complex reasoning compromises quality.
+- **Decision**: Implemented a **Cost & Latency Optimized Smart Router** in `omniwrench-ai`:
+  - **Task Complexity Classification**: Prompts are classified into complexity tiers (`TRIVIAL`, `STANDARD`, `COMPLEX`, `EXPERT`) based on prompt tokens, required tool count, multi-step dependencies, and domain flags.
+  - **Dynamic Backend Routing**:
+    * `TRIVIAL` (e.g., file search, simple shell execution, formatting): Routed to fast local/low-cost models (e.g., local Ollama / llama.cpp / lightweight cloud models) with sub-second latency.
+    * `STANDARD` (e.g., unit test generation, single-file edits, REST client calls): Routed to balanced models.
+    * `COMPLEX` / `EXPERT` (e.g., cross-module refactoring, architectural planning, multi-agent swarm coordination): Routed to frontier reasoning models (Claude 3.7 Sonnet, Gemini 2.0 Pro, GPT-4o).
+  - **Budget & SLA Constraints**: Respects configured annual project limits and per-session cost thresholds.
+
+### ADR-0020: Multi-Tier Security Guardrails and Command Safety Classification
+- **Status**: Accepted (2026-08-22)
+- **Context**: Autonomous and semi-autonomous AI agents executing filesystem operations and shell commands on production or developer machines pose high risks of accidental data loss or destructive modifications.
+- **Decision**: Implemented a **Multi-Tier Security Guardrail** system in `omniwrench-core` and `omniwrench-tools`:
+  - **Workspace Path Containment**: Strict boundary checks prevent file reads, writes, and deletions outside the configured `omniwrench.workspace-path` directory tree (canonical path resolution with symlink escape prevention).
+  - **Command Safety Classifier (`CommandSafetyEvaluator`)**: Every shell command is categorized into safety tiers:
+    * `SAFE_READ_ONLY` (e.g. `ls`, `cat`, `git status`, `mvn test`, `grep`): Auto-approved and executed directly.
+    * `MUTATING_SAFE` (e.g. `mkdir`, `touch`, `git add`): Logged and executed with pre-execution workspace state snapshot.
+    * `DESTRUCTIVE_HIGH_RISK` (e.g. `rm -rf`, `mkfs`, `sudo`, `dd`, `chmod -R 777`, `killall`, `git push`): Execution is blocked pending explicit interactive human confirmation in the TUI/Web HUD (enforcing CS-0070).
+  - **Audit Logging**: Every security evaluation and human approval token is recorded with OpenTelemetry spans and stored in `.omniwrench/audit/security-events.jsonl`.
+
+### ADR-0021: Atomic Task Checkpointing and Resilient Auto-Resume
+- **Status**: Accepted (2026-08-22)
+- **Context**: Long-running refactorings, multi-module builds, and infrastructure migrations may span hours or be interrupted by network disconnects, process restarts, or developer pauses.
+- **Decision**: Implemented an **Atomic Task Checkpointing** engine in `omniwrench-core`:
+  - **Single Entity File Store per Step**: Each node execution in a `TaskDag` writes an atomic JSON snapshot to `.omniwrench/tasks/{taskId}/steps/{stepId}.json` containing: step input, tool invocations, stdout/stderr captures, duration, exit code, and modified file hashes (strictly adhering to ADR-0009: no arrays in JSON files).
+  - **Crash Detection & Auto-Resume**: On startup, `SessionManager` and `PlanExecutorService` scan `.omniwrench/tasks/` for uncompleted DAGs. The TUI/Web HUD prompts the user: `[R]esume from last checkpoint`, `[S]tep rollback to step N`, or `[A]bort task`.
+  - **Idempotency & Replay**: Completed steps with unchanged file hashes are skipped during resume, avoiding redundant expensive tool operations or LLM inferences.
+
+### ADR-0022: Unified Comprehensive Command Palette and Slash Commands
+- **Status**: Accepted (2026-08-22)
+- **Context**: Developers need rapid, deterministic control over reasoning modes, model backends, git workflows, subagent swarms, checkpoints, and documentation generation directly from the TUI prompt.
+- **Decision**: Implemented a unified slash command router (`CommandDispatcher`) in `omniwrench-tui` and `omniwrench-core`:
+  - **Core Workflow**:
+    * `/plan <goal>`: Triggers Plan-and-Execute DAG synthesis without immediate execution.
+    * `/run <command>`: Direct shell command execution with guardrails.
+    * `/diff`: Displays colored interactive git workspace diff panel.
+    * `/commit [msg]`: Initiates human clearance protocol per CS-0070 and commits staged changes.
+  - **AI & Model Control**:
+    * `/model <name>`: Switches active inference model (e.g. `claude-3-7-sonnet`, `gemini-2.0-flash`, `llama3.2:latest`).
+    * `/backend <id>`: Switches active backend provider (`openai-compat`, `llamacpp`, `huggingface`, `torch`).
+    * `/tokens` & `/cost`: Displays real-time session token consumption, breakdown, and estimated cost against project budget.
+  - **Multi-Agent & Swarm**:
+    * `/swarm [status|list]`: Displays active subagents and inter-agent communication channels.
+    * `/tree`: Displays live hierarchical subagent tree.
+  - **State & Checkpoints**:
+    * `/checkpoint [name]`: Forces immediate atomic DAG state snapshot.
+    * `/resume [taskId]`: Resumes interrupted execution from last step.
+    * `/rollback [stepId]`: Reverts task execution state to specified step.
+  - **Documentation & Reporting**:
+    * `/doc-gen`: Updates and builds `mkdocs-kit` documentation suite.
+    * `/export-pdf`: Triggers WeasyPrint PDF compilation of documentation.
+
+### ADR-0023: Goal-, Task-, Requirement- and Test-Oriented Governance (No Fixed Calendar Schedule)
+- **Status**: Accepted (2026-08-22)
+- **Context**: Calendar-driven sprint schedules add artificial ceremony and friction. The project demands an agile, outcome-focused system driven purely by explicit goals, traceable requirements, and automated verification.
+- **Decision**: Adopted a **Task-, Goal-, Requirement-, and Test-Oriented Governance System** managed natively through `mkdocs-kit` and markdown documentation:
+  - **Zero Calendar Constraints**: No time-boxed sprints or artificial release dates. Progress is tracked strictly by requirement completion and test verification.
+  - **Atomic Task Files**: All work is decomposed into `TSK-YYYYMMDD-NNN.md` documents containing:
+    * Clear high-level **Goal**
+    * Detailed **Context & Architecture Decisions**
+    * Traceable **Requirements Checklist** (`[TSK-*.1]`, `[TSK-*.2]`)
+    * Execution **Status** (`Not started`, `In progress`, `Completed`)
+  - **Living Traceability Matrix**: PlantUML diagrams within `mkdocs-kit` dynamically map:
+    `Goal` -> `Requirement (REQ-*)` -> `Architecture Component` -> `Task (TSK-*)` -> `Unit/Integration Test (TEST-*)`
+  - **Quality Gates**: A task is only marked `Completed` when all associated tests pass (`mvn clean test`), PMD violations are 0, and documentation builds cleanly (`helpers/build-docs.sh build`).
