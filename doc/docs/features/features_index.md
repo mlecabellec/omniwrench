@@ -49,4 +49,8 @@ Comprehensive catalog of user-facing and engine-level functional capabilities pr
 - **`FR-00031` Lightweight Embedded SPA Web HUD**: Bundled Svelte/Vue 3 web interface accessible over HTTP and WebSocket (`ADR-0018`).
 - **`FR-00032` Secure Web API (`X-Api-Key` & JWT)**: Role-based HTTP authentication and WebSocket session protection (`ADR-0012`).
 - **`FR-00033` OpenTelemetry Distributed Tracing**: High-precision OTLP NDJSON span recording for every LLM turn and tool execution (`ADR-0014`).
+- **`FR-00034` Vim-Inspired Modal Navigation & Function Keys**: Seamless keyboard navigation via `Esc`/`i`/`h/j/k/l` and dedicated `F1-F6` hotkeys (`ADR-0037`).
+- **`FR-00035` SQLite Relational Symbol Graph**: Embedded relational database (`symbols.db`) with FTS5 search and inotify incremental updates (`ADR-0038`).
+- **`FR-00036` Multi-Format Session Exporter**: Export pairing sessions to Markdown, standalone HTML5, publication PDF, and JSON audit bundles (`ADR-0039`).
+- **`FR-00037` Autonomous Local Air-Gapped Mode**: 100% offline operation (`--offline`) with zero network egress and local LLM routing (`ADR-0040`).
 

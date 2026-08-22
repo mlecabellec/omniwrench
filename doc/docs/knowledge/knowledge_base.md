@@ -398,3 +398,61 @@ This document stores persistent project knowledge, architectural decisions, and 
     * Exposes Omniwrench's registered tools, prompt templates, and resource URI schemes (`omniwrench://sessions`, `omniwrench://tasks`) as an MCP server.
     * Operates over Stdio mode (`omniwrench mcp-server --stdio`) for integration into Claude Desktop, Cursor, and VS Code, or over SSE on a dedicated HTTP route (`/mcp/sse`).
   - **Security & Authorization**: All MCP tool executions pass through the 9-level policy engine (ADR-0020) and require human clearance for mutating/destructive operations.
+
+### ADR-0037: Vim-Inspired Modal Navigation and Dedicated Function Keys in TUI
+- **Status**: Accepted (2026-08-22)
+- **Context**: Efficient keyboard ergonomics are essential for high-velocity software engineering without requiring mouse interaction in terminal environments.
+- **Decision**: Implemented **Vim-Inspired Modal Navigation and Dedicated Function Keys** in `omniwrench-tui`:
+  - **Modal States**:
+    * **Normal / Command Mode (`Esc`)**: `h`/`j`/`k`/`l` or Arrow keys navigate between terminal panels (Chat, Tool Output, Status HUD, Diff Viewer). `Tab`/`Shift+Tab` cycle focus sequentially.
+    * **Insert / Prompt Mode (`i` / `Enter`)**: Focuses the input box with full readline editing, history recall (`Up`/`Down`), and syntax highlighting.
+  - **Slash Command Trigger (`/`)**: Directly activates the fuzzy-searchable Command Palette modal.
+  - **Dedicated Function Key Map**:
+    * `F1`: Interactive Help Overlay & Keybinding cheat sheet.
+    * `F2`: Smart Model Router Tier Switcher (`TRIVIAL` $\leftrightarrow$ `EXPERT`).
+    * `F3`: Workspace File Tree Explorer.
+    * `F4`: Dynamic Subagent Swarm Inspector.
+    * `F5`: Interactive Neon Diff Viewer (hunk staging `s` / revert `r`).
+    * `F6`: Dynamic Theme Switcher modal.
+    * `Ctrl+C`: Gracefully aborts current LLM generation or long-running tool subprocess.
+
+### ADR-0038: Embedded SQLite Relational Symbol Graph for AST and Code Intelligence
+- **Status**: Accepted (2026-08-22)
+- **Context**: Code intelligence, call hierarchy tracing, symbol lookups, and refactoring impact analysis require fast relational queries across classes, interfaces, methods, annotations, and dependencies without re-parsing source files on every prompt.
+- **Decision**: Implemented an **Embedded SQLite Relational Symbol Graph** in `.omniwrench/symbols.db`:
+  - **Relational Schema**:
+    * `files (id, path, last_modified_epoch, sha256_hash)`
+    * `symbols (id, file_id, kind, qualified_name, name, start_line, end_line, visibility, return_type)`
+    * `symbol_relations (source_symbol_id, target_symbol_id, relation_kind)` (e.g. `EXTENDS`, `IMPLEMENTS`, `CALLS`, `ANNOTATED_WITH`, `OVERRIDES`)
+    * `symbols_fts` (SQLite FTS5 virtual table for full-text symbol search)
+  - **Incremental File-Watcher Updates**:
+    * An asynchronous file system watcher (`WatchService` / inotify) tracks modifications in the workspace.
+    * Changed files trigger single-file AST parsing via JavaParser (ADR-0024), incrementally refreshing relational entries inside an atomic SQLite transaction.
+  - **Complex Graph Queries**: Enables sub-millisecond queries for caller/callee trees, interface implementation finders, and transitive refactoring impact analysis.
+
+### ADR-0039: Multi-Format Session Exporter and Report Generator
+- **Status**: Accepted (2026-08-22)
+- **Context**: Pairing sessions, architectural deliberations, code reviews, and autonomous refactoring plans produce valuable technical knowledge that must be shared with human stakeholders, CI pipelines, and external documentation.
+- **Decision**: Implemented a **Multi-Format Session Exporter** invoked via `/export <format>`:
+  - **1. Markdown & PlantUML (`/export md`)**:
+    * Generates a clean GitHub-flavored markdown document containing conversational history, decisions, code diffs, and auto-generated PlantUML sequence/activity diagrams.
+    * Written to `doc/docs/reports/{sessionId}.md` and automatically indexed in `mkdocs-kit`.
+  - **2. Standalone HTML5 Bundle (`/export html`)**:
+    * Single-file standalone HTML5 page with embedded CSS, syntax highlighting, and SVG diagrams for offline viewing without a web server.
+  - **3. Printable PDF Manual (`/export pdf`)**:
+    * Compiles the session report into a publication-quality PDF with page numbers, table of contents, and vectorized diagrams via `mkdocs-kit` and WeasyPrint.
+  - **4. Structured JSON Audit Bundle (`/export json`)**:
+    * Complete machine-readable audit trail containing all turn timestamps, LLM prompts/completions, tool inputs/outputs, OpenTelemetry trace IDs, and git commit hashes.
+
+### ADR-0040: Autonomous Local Air-Gapped Mode (--offline / --local)
+- **Status**: Accepted (2026-08-22)
+- **Context**: Industrial installations, confidential codebases, and disconnected environments require 100% air-gapped execution with guaranteed zero data exfiltration and zero dependency on external cloud services.
+- **Decision**: Implemented **Autonomous Local Air-Gapped Mode** (`--offline` / `--local` / `OMNIWRENCH_OFFLINE=true`):
+  - **Local Model Routing**: Smart Model Router redirects all inference requests to local OpenAI-compatible or Ollama/llama.cpp/vLLM endpoints (e.g. `http://localhost:11434/v1` or `http://localhost:8000/v1`).
+  - **Local-Only Code Intelligence**:
+    * AST code intelligence operates entirely via local JavaParser and the embedded SQLite symbol graph (`.omniwrench/symbols.db`).
+    * Knowledge retrieval uses local BM25 indexing without remote vector cloud dependencies.
+  - **Zero Outbound Network Egress**:
+    * Disables all external telemetry, remote update checks, and cloud analytics.
+    * OpenTelemetry traces write strictly to the local NDJSON file (`.omniwrench/traces.ndjson`).
+    * Enforces strict socket connection filters allowing only localhost loopback interfaces (`127.0.0.1`, `::1`) and explicitly configured local network bridges (e.g. Home Assistant LAN IP).

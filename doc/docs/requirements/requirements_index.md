@@ -60,4 +60,8 @@ This register details all formal system requirements for Omniwrench with full tr
 | `REQ-00075` | Embedded Lightweight SPA Dashboard (Svelte/Vue 3) | ADR-0018 | High | Web HUD & WebSocket Test | Implemented |
 | `REQ-00076` | Spring Security API Key Auth (`X-Api-Key`) + Optional JWT | ADR-0012 | High | HTTP 401/200 Security Test | Implemented |
 | `REQ-00077` | OpenTelemetry Distributed Tracing & NDJSON Export | ADR-0014 | High | OTLP Span Output Validation | Implemented |
+| `REQ-00078` | Vim-Inspired Modal Navigation & Function Keys (`F1-F6`) | ADR-0037 | High | Keymap & Focus Traversal Test | Specified |
+| `REQ-00079` | SQLite Relational Symbol Graph (`.omniwrench/symbols.db`) | ADR-0038 | High | SQL Symbol Relation Queries Test | Specified |
+| `REQ-00080` | Multi-Format Session Exporter (`md`, `html`, `pdf`, `json`) | ADR-0039 | High | Export Artifact Generation Test | Specified |
+| `REQ-00081` | Autonomous Local Air-Gapped Mode (`--offline`) | ADR-0040 | Critical | Zero Egress Socket Filter Test | Specified |
 
