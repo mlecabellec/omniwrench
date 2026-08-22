@@ -192,7 +192,7 @@ package "com.omniwrench.fs" {
 
 package "com.omniwrench.git" {
   class ShadowGitSnapshotService <<Service>>
-  record FileDiff
+  class FileDiff <<record>>
 }
 
 package "com.omniwrench.lsp" {

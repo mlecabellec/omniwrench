@@ -195,8 +195,7 @@ skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
 
 actor User
-participant "Channel Adapter
-(Discord/Slack)" as Channel
+participant "Channel Adapter (Discord/Slack)" as Channel
 participant "QuestionManager" as QM
 participant "Agent Engine" as Agent
 

@@ -264,7 +264,7 @@ package "com.omniwrench.core" {
 
 package "com.omniwrench.policy" {
   class PolicyEngine <<Component>>
-  record PolicyRule
+  class PolicyRule <<record>>
   enum Decision
 }
 
@@ -275,7 +275,7 @@ package "com.omniwrench.hooks" {
 
 package "com.omniwrench.tools" {
   class ToolRegistry <<Component>>
-  record ToolDescriptor
+  class ToolDescriptor <<record>>
 }
 
 package "com.omniwrench.triggers" {

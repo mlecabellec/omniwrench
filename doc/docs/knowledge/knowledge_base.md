@@ -303,3 +303,44 @@ This document stores persistent project knowledge, architectural decisions, and 
   - **Pluggable Protocol SPI (`ProtocolBridge`)**:
     * Generic lifecycle contract (`connect()`, `disconnect()`, `subscribe()`, `publish()`, `invoke()`).
     * Protocol plugins (e.g. MQTT, Modbus, CoAP, BLE, Zigbee) register as Spring beans or ServiceLoader SPIs, seamlessly bridging into the agent tool registry and event bus.
+
+### ADR-0030: Reactive EventBus Engine via Project Reactor Sinks
+- **Status**: Accepted (2026-08-22)
+- **Context**: Inter-module communication, subagent swarm notifications, protocol bridge streaming (Home Assistant, WebSocket), and real-time UI updates (TUI dashboard & Web HUD) require a non-blocking, type-safe event dispatcher supporting multicast replay and backpressure.
+- **Decision**: Implemented a **Reactive EventBus** in `omniwrench-core` powered by Project Reactor:
+  - **Type-Safe Multicast Sink (`ReactorEventBus`)**: Backed by `Sinks.many().multicast().onBackpressureBuffer(1024, false)`, providing non-blocking event publication (`tryEmitNext`) and decoupled consumer subscriptions (`asFlux().publishOn(Schedulers.boundedElastic())`).
+  - **Zero-Blocking Architecture**: Thread isolation between publisher threads (e.g. AgentEngine reasoning loop) and slow consumers (e.g. ANSI terminal redraw, network WebSocket frame encoders).
+  - **Topic Filtering & Subscriptions**: Type-safe filtering via `Flux.ofType(Class<T>)` and topic matching (`eventBus.onTopic("agent.turn.*")`).
+  - **Replay & Late Subscriber Support**: Replay buffer allows newly attached UI sessions (e.g. browser page refresh or TUI panel switch) to receive the last N state updates immediately.
+
+### ADR-0031: Hierarchical Configuration Layering and Secure Secrets Vault
+- **Status**: Accepted (2026-08-22)
+- **Context**: Omniwrench runs across heterogeneous environments (workstations, CI/CD pipelines, Debian/SUSE servers) and handles sensitive API keys (OpenAI, Claude, Gemini, Home Assistant Long-Lived Tokens, SSH passphrases). Configuration must be flexible while strictly guarding secrets from accidental leakage.
+- **Decision**: Implemented **Hierarchical Configuration Layering** and **AES-256 Secrets Vault**:
+  - **Precedence Hierarchy (Highest to Lowest)**:
+    1. **Command-Line Arguments / Flags** (`--omniwrench.ai.model=...`, `-m ...`)
+    2. **Environment Variables** (`OMNIWRENCH_AI_API_KEY`, `OMNIWRENCH_PORT`)
+    3. **Workspace-Specific Configuration** (`.omniwrench/config.yml`)
+    4. **User-Global Configuration** (`~/.config/omniwrench/config.yml`)
+    5. **Application Default Package Defaults** (`omniwrench-app/src/main/resources/application.yml`)
+  - **Secrets Masking & Vault**:
+    * Sensitive fields (`api-key`, `jwt-secret`, `token`, `password`) are automatically masked in TUI displays, Web API responses, and SLF4J logs (`sk-***...***`).
+    * Optional local encrypted secrets file (`.omniwrench/secrets.enc`) secured via AES-256-GCM, derived from a master passphrase or machine-id hash via PBKDF2/Argon2.
+
+### ADR-0032: Unified Matrix CI/CD Workflows for GitHub Actions and Gitea Actions
+- **Status**: Accepted (2026-08-22)
+- **Context**: Omniwrench is hosted simultaneously on GitHub and self-hosted Gitea instances. Continuous integration workflows must be portable, resilient, and automatically enforce the 5-stage quality verification protocol on all pull requests and pushes.
+- **Decision**: Implemented a **Unified Matrix CI/CD Workflow** declared under `.github/workflows/ci.yml` and `.gitea/workflows/ci.yml`:
+  - **Job 1 — Code Quality & Static Linting**:
+    * Runs on `ubuntu-latest` / Debian runner with Temurin OpenJDK 21.
+    * Executes Checkstyle (`mvn checkstyle:check`) and PMD (`mvn pmd:check`) against zero-tolerance rulesets.
+  - **Job 2 — Maven Multi-Module Test Suite**:
+    * Compiles all 6 modules and executes 100% JUnit 5 test suite across Linux matrix.
+    * Collects Surefire and JaCoCo coverage reports as workflow artifacts.
+  - **Job 3 — Documentation & PlantUML Compilation**:
+    * Executes `./helpers/build-docs.sh build` with `mkdocs-kit`.
+    * Verifies zero broken links and compiles standalone HTML site and PDF manuals.
+  - **Job 4 — Release Assembly (on tags/master)**:
+    * Packages Spring Boot executable Fat JAR (`omniwrench-app.jar`).
+    * Compiles GraalVM Native Image binary (`omniwrench`).
+    * Publishes multi-module release bundle with SHA-256 checksum manifests.
