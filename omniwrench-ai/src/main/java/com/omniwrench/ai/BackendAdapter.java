@@ -9,7 +9,11 @@ import java.util.Objects;
  * OpenAI-compatible endpoints, Torch, llama.cpp, TensorFlow, HuggingFace Transformers.
  * Adapters are discovered via Java {@code ServiceLoader} from plugin JARs (see ADR-0010).
  *
- * <p>See ADR-0015: Custom Future-Proof Multi-Modal AI Adapter SPI.
+ * Traceability:
+ * - Requirement: REQ-00040 (Custom Multi-Modal AI Adapter SPI), REQ-00041 (Multi-Provider Pluggable AI Adapters)
+ * - Feature: FR-00011 (Multi-Modal Typed AI Abstraction), FR-00012 (Universal Pluggable AI Adapters)
+ * - Use Case: UC-00001 (Interactive TUI Pair Programming)
+ * - ADR: ADR-0010 (Plugin Discovery & ClassLoader Isolation), ADR-0015 (Future-Proof Multi-Modal SPI)
  *
  * @param <T> the MediaType this adapter processes
  */

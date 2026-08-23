@@ -9,6 +9,12 @@ import java.util.Objects;
  *
  * <p>Carries topic/channel identifier, payload, metadata headers, and timestamp.
  *
+ * Traceability:
+ * - Requirement: REQ-00063 (Pluggable Protocol Bridge SPI & Home Assistant Bridge)
+ * - Feature: FR-00023 (Pluggable Protocol Bridge & Home Assistant)
+ * - Use Case: UC-00008 (Home Assistant Telemetry & Automation)
+ * - ADR: ADR-0029 (Home Assistant Protocol Bridge Integration)
+ *
  * @param topic the routing key, endpoint, or topic name
  * @param payload the message payload as string or serialized JSON
  * @param headers unmodifiable metadata attributes

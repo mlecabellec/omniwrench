@@ -20,24 +20,37 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Shell command execution tool bounded by timeouts and sandboxed directory execution.
- * 
+ *
  * Traceability:
- * - Requirement: REQ-00022 (Bounded Shell Command Execution Tool)
+ * - Requirement: REQ-00060 (Polyvalent Base Architecture with Pluggable Tools), REQ-00065 (Multi-Tier Security Guardrails)
+ * - Feature: FR-00020 (Polyvalent Base Tool SPI), FR-00025 (Multi-Tier Security Guardrails)
+ * - Use Case: UC-00002 (Autonomous Goal Planning & Refactoring)
  * - Task: TSK-20260822-005 (Pluggable Tool Registry & Agent Execution Loop)
+ * - ADR: ADR-0006 (Pluggable Tools Architecture), ADR-0020 (Command Safety Classification)
  */
 @Component
-public class CommandExecutionTool implements Tool {
+public final class CommandExecutionTool implements Tool {
 
+    /** Logger instance. */
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandExecutionTool.class);
+    /** Process execution timeout in seconds. */
     private static final long TIMEOUT_SECONDS = 30L;
 
+    /** Tool descriptor definition. */
     private final ToolDefinition definition;
 
+    /**
+     * Constructs CommandExecutionTool and defines parameter schema.
+     */
     public CommandExecutionTool() {
         final Map<String, String> schema = new HashMap<>();
         schema.put("command", "Shell command line to execute");
         schema.put("cwd", "Optional sub-directory relative to workspace");
-        this.definition = new ToolDefinition("run_command", "Executes shell commands in a bounded process execution environment", schema);
+        this.definition = new ToolDefinition(
+                "run_command",
+                "Executes shell commands in a bounded process execution environment",
+                schema
+        );
     }
 
     @Override
@@ -79,12 +92,14 @@ public class CommandExecutionTool implements Tool {
             final boolean completed = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
             if (!completed) {
                 process.destroyForcibly();
-                return new ToolInvocation(callId, "run_command", arguments, "Process timed out after " + TIMEOUT_SECONDS + " seconds.", false, Instant.now());
+                final String timeoutMsg = "Process timed out after " + TIMEOUT_SECONDS + " seconds.";
+                return new ToolInvocation(callId, "run_command", arguments, timeoutMsg, false, Instant.now());
             }
 
             final int exitCode = process.exitValue();
             final boolean success = exitCode == 0;
-            return new ToolInvocation(callId, "run_command", arguments, "Exit Code: " + exitCode + "\nOutput:\n" + output.toString(), success, Instant.now());
+            final String outMsg = "Exit Code: " + exitCode + "\nOutput:\n" + output.toString();
+            return new ToolInvocation(callId, "run_command", arguments, outMsg, success, Instant.now());
         } catch (final Exception e) {
             LOGGER.error("Failed to execute command: {}", command, e);
             return new ToolInvocation(callId, "run_command", arguments, "Execution error: " + e.getMessage(), false, Instant.now());

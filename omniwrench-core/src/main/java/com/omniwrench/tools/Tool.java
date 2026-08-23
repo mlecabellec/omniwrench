@@ -8,10 +8,13 @@ import java.util.Map;
 
 /**
  * Fundamental interface for all executable agent capabilities and tooling plugins.
- * 
+ *
  * Traceability:
- * - Requirement: REQ-00020 (Pluggable Tool SPI)
+ * - Requirement: REQ-00060 (Polyvalent Base Architecture with Pluggable Tools)
+ * - Feature: FR-00020 (Polyvalent Base Tool SPI)
+ * - Use Case: UC-00009 (MCP External Server Tool Invocation)
  * - Task: TSK-20260822-005 (Pluggable Tool Registry & Agent Execution Loop)
+ * - ADR: ADR-0006 (Polyvalent Tool Architecture)
  */
 public interface Tool {
 

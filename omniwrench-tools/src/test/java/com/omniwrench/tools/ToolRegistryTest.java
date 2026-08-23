@@ -4,9 +4,9 @@ import com.omniwrench.core.ToolRegistry;
 import com.omniwrench.model.SessionContext;
 import com.omniwrench.model.ToolDefinition;
 import com.omniwrench.model.ToolInvocation;
-import com.omniwrench.tools.FileOperationsTool;
-import com.omniwrench.tools.Tool;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -19,12 +19,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Unit tests verifying ToolRegistry lifecycle and lookup semantics.
- * 
+ * Unit tests verifying ToolRegistry lifecycle, lookup semantics, and dynamic registration.
+ *
  * Traceability:
- * - Requirement: REQ-00020 (Pluggable Tool SPI & Registry)
+ * - Requirement: REQ-00060 (Polyvalent Base Architecture with Pluggable Tools)
+ * - Feature: FR-00020 (Polyvalent Base Tool SPI)
+ * - Use Case: UC-00009 (MCP External Server Tool Invocation)
  * - Task: TSK-20260822-005 (Pluggable Tool Registry & Agent Execution Loop)
+ * - ADR: ADR-0006 (Polyvalent Tool Architecture)
  */
+@Tag("REQ-00060")
+@Tag("FR-00020")
+@Tag("UC-00009")
+@Tag("TSK-20260822-005")
 class ToolRegistryTest {
 
     private ToolRegistry toolRegistry;
@@ -39,19 +46,23 @@ class ToolRegistryTest {
     }
 
     @Test
+    @DisplayName("Should find registered tool by unique name")
     void shouldFindRegisteredTool() {
         final Optional<Tool> tool = toolRegistry.getTool("file_ops");
         assertThat(tool).isPresent();
         assertThat(tool.get().getDefinition().getName()).isEqualTo("file_ops");
+        assertThat(toolRegistry.getAllDefinitions()).hasSize(1);
     }
 
     @Test
+    @DisplayName("Should return empty Optional for unknown tool name")
     void shouldReturnEmptyForUnknownTool() {
         final Optional<Tool> tool = toolRegistry.getTool("unknown_tool");
         assertThat(tool).isEmpty();
     }
 
     @Test
+    @DisplayName("Should register dynamic custom tool at runtime")
     void shouldRegisterDynamicTool() {
         final Tool customTool = new Tool() {
             @Override
@@ -71,6 +82,7 @@ class ToolRegistryTest {
     }
 
     @Test
+    @DisplayName("Should reject null tool registration or null lookup parameter")
     void shouldRejectNullRegistration() {
         assertThrows(NullPointerException.class, () -> toolRegistry.registerTool(null));
         assertThrows(NullPointerException.class, () -> toolRegistry.getTool(null));

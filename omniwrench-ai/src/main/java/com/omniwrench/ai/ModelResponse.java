@@ -9,6 +9,12 @@ import java.util.Objects;
  * <p>Wraps the raw output with metadata including latency, token counts,
  * and provider identifiers for observability (ADR-0014).
  *
+ * Traceability:
+ * - Requirement: REQ-00040 (Custom Multi-Modal AI Adapter SPI), REQ-00077 (OpenTelemetry Distributed Tracing)
+ * - Feature: FR-00011 (Multi-Modal Typed AI Abstraction), FR-00033 (OpenTelemetry Distributed Tracing)
+ * - Use Case: UC-00001 (Interactive TUI Pair Programming)
+ * - ADR: ADR-0014 (OpenTelemetry Distributed Tracing), ADR-0015 (Future-Proof Multi-Modal SPI)
+ *
  * @param <T> the MediaType classification of the originating request
  */
 public final class ModelResponse<T extends MediaType> {
@@ -29,38 +35,79 @@ public final class ModelResponse<T extends MediaType> {
     /**
      * Constructs a model response with full validation.
      *
-     * @param content the response content, must not be null
-     * @param mediaType the media type, must not be null
-     * @param inputTokens the number of input tokens
-     * @param outputTokens the number of output tokens
-     * @param resolvedModel the resolved model name, must not be null
-     * @param timestamp the response timestamp, must not be null
+     * @param contentVal the response content, must not be null
+     * @param mediaTypeVal the media type, must not be null
+     * @param inputTokensVal the number of input tokens
+     * @param outputTokensVal the number of output tokens
+     * @param resolvedModelVal the resolved model name, must not be null
+     * @param timestampVal the response timestamp, must not be null
      */
     public ModelResponse(
-            final String content,
-            final T mediaType,
-            final int inputTokens,
-            final int outputTokens,
-            final String resolvedModel,
-            final Instant timestamp) {
-        this.content = Objects.requireNonNull(content, "content must not be null");
-        this.mediaType = Objects.requireNonNull(mediaType, "mediaType must not be null");
-        this.inputTokens = inputTokens;
-        this.outputTokens = outputTokens;
-        this.resolvedModel = Objects.requireNonNull(resolvedModel, "resolvedModel must not be null");
-        this.timestamp = Objects.requireNonNull(timestamp, "timestamp must not be null");
+            final String contentVal,
+            final T mediaTypeVal,
+            final int inputTokensVal,
+            final int outputTokensVal,
+            final String resolvedModelVal,
+            final Instant timestampVal) {
+        this.content = Objects.requireNonNull(contentVal, "content must not be null");
+        this.mediaType = Objects.requireNonNull(mediaTypeVal, "mediaType must not be null");
+        this.inputTokens = inputTokensVal;
+        this.outputTokens = outputTokensVal;
+        this.resolvedModel = Objects.requireNonNull(resolvedModelVal, "resolvedModel must not be null");
+        this.timestamp = Objects.requireNonNull(timestampVal, "timestamp must not be null");
     }
 
-    /** Returns the response content. */
-    public String getContent() { return content; }
-    /** Returns the media type. */
-    public T getMediaType() { return mediaType; }
-    /** Returns input token count. */
-    public int getInputTokens() { return inputTokens; }
-    /** Returns output token count. */
-    public int getOutputTokens() { return outputTokens; }
-    /** Returns the resolved model identifier. */
-    public String getResolvedModel() { return resolvedModel; }
-    /** Returns the response timestamp. */
-    public Instant getTimestamp() { return timestamp; }
+    /**
+     * Returns the response content.
+     *
+     * @return the response content
+     */
+    public String getContent() {
+        return content;
+    }
+
+    /**
+     * Returns the media type.
+     *
+     * @return the media type
+     */
+    public T getMediaType() {
+        return mediaType;
+    }
+
+    /**
+     * Returns input token count.
+     *
+     * @return number of input tokens
+     */
+    public int getInputTokens() {
+        return inputTokens;
+    }
+
+    /**
+     * Returns output token count.
+     *
+     * @return number of output tokens
+     */
+    public int getOutputTokens() {
+        return outputTokens;
+    }
+
+    /**
+     * Returns the resolved model identifier.
+     *
+     * @return resolved model name
+     */
+    public String getResolvedModel() {
+        return resolvedModel;
+    }
+
+    /**
+     * Returns the response timestamp.
+     *
+     * @return response timestamp
+     */
+    public Instant getTimestamp() {
+        return timestamp;
+    }
 }

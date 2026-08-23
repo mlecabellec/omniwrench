@@ -8,7 +8,11 @@ import java.util.Objects;
  * <p>Sealed hierarchy covering all AI interaction domains supported by Omniwrench.
  * Each concrete type carries the parameters specific to that modality.
  *
- * <p>See ADR-0015: Custom Future-Proof Multi-Modal AI Adapter SPI.
+ * Traceability:
+ * - Requirement: REQ-00040 (Custom Multi-Modal AI Adapter SPI)
+ * - Feature: FR-00011 (Multi-Modal Typed AI Abstraction)
+ * - Use Case: UC-00001 (Interactive TUI Pair Programming)
+ * - ADR: ADR-0015 (Future-Proof Multi-Modal SPI)
  */
 public sealed interface MediaType
         permits MediaType.TextCompletion,
@@ -18,9 +22,16 @@ public sealed interface MediaType
                 MediaType.EmbeddingGeneration,
                 MediaType.DataflowProcessing {
 
-    /** Single-turn text completion without message history. */
+    /**
+     * Single-turn text completion without message history.
+     *
+     * @param prompt prompt text
+     * @param maxTokens maximum tokens to generate
+     */
     record TextCompletion(String prompt, int maxTokens) implements MediaType {
-        /** Constructs a text completion request with validation. */
+        /**
+         * Constructs a text completion request with validation.
+         */
         public TextCompletion {
             Objects.requireNonNull(prompt, "prompt must not be null");
             if (maxTokens <= 0) {
@@ -29,9 +40,16 @@ public sealed interface MediaType
         }
     }
 
-    /** Multi-turn chat reasoning with full conversation context. */
+    /**
+     * Multi-turn chat reasoning with full conversation context.
+     *
+     * @param systemPrompt system instructions
+     * @param maxTokens maximum tokens to generate
+     */
     record ChatReasoning(String systemPrompt, int maxTokens) implements MediaType {
-        /** Constructs a chat reasoning request with validation. */
+        /**
+         * Constructs a chat reasoning request with validation.
+         */
         public ChatReasoning {
             Objects.requireNonNull(systemPrompt, "systemPrompt must not be null");
             if (maxTokens <= 0) {
@@ -40,9 +58,17 @@ public sealed interface MediaType
         }
     }
 
-    /** Image generation from a text prompt. */
+    /**
+     * Image generation from a text prompt.
+     *
+     * @param prompt image prompt
+     * @param width image width in pixels
+     * @param height image height in pixels
+     */
     record ImageGeneration(String prompt, int width, int height) implements MediaType {
-        /** Constructs an image generation request with validation. */
+        /**
+         * Constructs an image generation request with validation.
+         */
         public ImageGeneration {
             Objects.requireNonNull(prompt, "prompt must not be null");
             if (width <= 0 || height <= 0) {
@@ -51,18 +77,32 @@ public sealed interface MediaType
         }
     }
 
-    /** Image transformation / editing (inpainting, style transfer, upscaling). */
+    /**
+     * Image transformation / editing (inpainting, style transfer, upscaling).
+     *
+     * @param instruction transformation instructions
+     * @param sourceImage source image bytes
+     */
     record ImageTransformation(String instruction, byte[] sourceImage) implements MediaType {
-        /** Constructs an image transformation request with validation. */
+        /**
+         * Constructs an image transformation request with validation.
+         */
         public ImageTransformation {
             Objects.requireNonNull(instruction, "instruction must not be null");
             Objects.requireNonNull(sourceImage, "sourceImage must not be null");
         }
     }
 
-    /** Dense vector embedding generation for semantic search or RAG. */
+    /**
+     * Dense vector embedding generation for semantic search or RAG.
+     *
+     * @param text input text to embed
+     * @param dimensions target vector dimensions
+     */
     record EmbeddingGeneration(String text, int dimensions) implements MediaType {
-        /** Constructs an embedding generation request with validation. */
+        /**
+         * Constructs an embedding generation request with validation.
+         */
         public EmbeddingGeneration {
             Objects.requireNonNull(text, "text must not be null");
             if (dimensions <= 0) {
@@ -71,9 +111,16 @@ public sealed interface MediaType
         }
     }
 
-    /** Structured data processing and transformation via AI. */
+    /**
+     * Structured data processing and transformation via AI.
+     *
+     * @param schemaHint hint schema format
+     * @param payload input payload
+     */
     record DataflowProcessing(String schemaHint, String payload) implements MediaType {
-        /** Constructs a dataflow processing request with validation. */
+        /**
+         * Constructs a dataflow processing request with validation.
+         */
         public DataflowProcessing {
             Objects.requireNonNull(schemaHint, "schemaHint must not be null");
             Objects.requireNonNull(payload, "payload must not be null");

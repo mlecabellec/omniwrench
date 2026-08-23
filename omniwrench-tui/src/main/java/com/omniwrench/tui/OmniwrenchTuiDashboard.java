@@ -18,35 +18,54 @@ import java.util.Objects;
 
 /**
  * Interactive Terminal User Interface dashboard loop for local agent orchestration.
- * 
+ *
  * Traceability:
- * - Requirement: REQ-00041 (Interactive Cyberpunk TUI Loop)
+ * - Requirement: REQ-00001 (Dual Headless CLI & Interactive TUI Presentation Engine), REQ-00043 (Hybrid Reasoning Loop)
+ * - Feature: FR-00001 (Dual Headless & Interactive Presentation Engine)
+ * - Use Case: UC-00001 (Interactive TUI Pair Programming)
  * - Task: TSK-20260822-003 (Modern Cyberpunk TUI Design & Integration)
+ * - ADR: ADR-0001 (Unified Dual Architecture)
  */
 @Component
 public class OmniwrenchTuiDashboard {
 
+    /** Logger instance. */
     private static final Logger LOGGER = LoggerFactory.getLogger(OmniwrenchTuiDashboard.class);
 
+    /** Presentation renderer. */
     private final TerminalRenderer renderer;
+    /** Agent reasoning engine. */
     private final AgentEngine agentEngine;
+    /** Session manager. */
     private final SessionManager sessionManager;
+    /** Tool registry. */
     private final ToolRegistry toolRegistry;
+    /** Runtime configuration properties. */
     private final OmniwrenchProperties properties;
 
+    /** Web server port property. */
     @Value("${server.port:8080}")
     private int serverPort;
 
-    public OmniwrenchTuiDashboard(final TerminalRenderer renderer,
-                                  final AgentEngine agentEngine,
-                                  final SessionManager sessionManager,
-                                  final ToolRegistry toolRegistry,
-                                  final OmniwrenchProperties properties) {
-        this.renderer = Objects.requireNonNull(renderer, "renderer must not be null");
-        this.agentEngine = Objects.requireNonNull(agentEngine, "agentEngine must not be null");
-        this.sessionManager = Objects.requireNonNull(sessionManager, "sessionManager must not be null");
-        this.toolRegistry = Objects.requireNonNull(toolRegistry, "toolRegistry must not be null");
-        this.properties = Objects.requireNonNull(properties, "properties must not be null");
+    /**
+     * Constructs the TUI dashboard with required presentation, engine, and registry dependencies.
+     *
+     * @param rendererVal the terminal renderer, must not be null
+     * @param agentEngineVal the agent reasoning engine, must not be null
+     * @param sessionManagerVal the session manager, must not be null
+     * @param toolRegistryVal the tool registry, must not be null
+     * @param propertiesVal the configuration properties, must not be null
+     */
+    public OmniwrenchTuiDashboard(final TerminalRenderer rendererVal,
+                                  final AgentEngine agentEngineVal,
+                                  final SessionManager sessionManagerVal,
+                                  final ToolRegistry toolRegistryVal,
+                                  final OmniwrenchProperties propertiesVal) {
+        this.renderer = Objects.requireNonNull(rendererVal, "renderer must not be null");
+        this.agentEngine = Objects.requireNonNull(agentEngineVal, "agentEngine must not be null");
+        this.sessionManager = Objects.requireNonNull(sessionManagerVal, "sessionManager must not be null");
+        this.toolRegistry = Objects.requireNonNull(toolRegistryVal, "toolRegistry must not be null");
+        this.properties = Objects.requireNonNull(propertiesVal, "properties must not be null");
     }
 
     /**

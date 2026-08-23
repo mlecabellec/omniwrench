@@ -6,37 +6,64 @@ import java.util.Objects;
 
 /**
  * Metadata definition and schema contract for an Omniwrench executable tool.
- * 
+ *
  * Traceability:
  * - Requirement: REQ-00011 (Extensible Tool Registry Contract)
+ * - Feature: FR-00020 (Polyvalent Base Tool SPI)
+ * - Use Case: UC-00009 (MCP External Server Tool Invocation)
  * - Task: TSK-20260822-001 (Project Initialization & Dual Skeleton)
  */
 public final class ToolDefinition {
 
+    /** Tool unique identifier name. */
     private final String name;
+    /** Human readable tool description. */
     private final String description;
+    /** Parameter names and type/doc schema mapping. */
     private final Map<String, String> parameterSchema;
 
-    public ToolDefinition(final String name,
-                          final String description,
-                          final Map<String, String> parameterSchema) {
-        this.name = Objects.requireNonNull(name, "name must not be null");
-        this.description = Objects.requireNonNull(description, "description must not be null");
-        if (parameterSchema == null) {
+    /**
+     * Constructs a ToolDefinition with name, description, and parameter descriptions.
+     *
+     * @param nameVal tool unique name, must not be null
+     * @param descriptionVal tool purpose description, must not be null
+     * @param parameterSchemaVal parameter names and description mapping, may be null
+     */
+    public ToolDefinition(final String nameVal,
+                          final String descriptionVal,
+                          final Map<String, String> parameterSchemaVal) {
+        this.name = Objects.requireNonNull(nameVal, "name must not be null");
+        this.description = Objects.requireNonNull(descriptionVal, "description must not be null");
+        if (parameterSchemaVal == null) {
             this.parameterSchema = Collections.emptyMap();
         } else {
-            this.parameterSchema = Map.copyOf(parameterSchema);
+            this.parameterSchema = Map.copyOf(parameterSchemaVal);
         }
     }
 
+    /**
+     * Returns tool name.
+     *
+     * @return tool name
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Returns tool description.
+     *
+     * @return tool description
+     */
     public String getDescription() {
         return description;
     }
 
+    /**
+     * Returns parameter schema map.
+     *
+     * @return immutable parameter schema map
+     */
     public Map<String, String> getParameterSchema() {
         return parameterSchema;
     }

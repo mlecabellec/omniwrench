@@ -20,18 +20,26 @@ import java.util.stream.Stream;
 
 /**
  * File viewing, reading, and creation tool for agent workspace interactions.
- * 
+ *
  * Traceability:
- * - Requirement: REQ-00021 (Workspace File Operations Tool)
+ * - Requirement: REQ-00060 (Polyvalent Base Architecture with Pluggable Tools)
+ * - Feature: FR-00020 (Polyvalent Base Tool SPI)
+ * - Use Case: UC-00001 (Interactive TUI Pair Programming), UC-00005 (AST Static Analysis & Comment-Safe Edits)
  * - Task: TSK-20260822-005 (Pluggable Tool Registry & Agent Execution Loop)
+ * - ADR: ADR-0006 (Polyvalent Tool Architecture)
  */
 @Component
-public class FileOperationsTool implements Tool {
+public final class FileOperationsTool implements Tool {
 
+    /** Logger instance. */
     private static final Logger LOGGER = LoggerFactory.getLogger(FileOperationsTool.class);
 
+    /** Tool descriptor definition. */
     private final ToolDefinition definition;
 
+    /**
+     * Constructs FileOperationsTool and defines actions and parameter schemas.
+     */
     public FileOperationsTool() {
         final Map<String, String> schema = new HashMap<>();
         schema.put("action", "Action to perform: 'read', 'write', 'list', 'exists'");
@@ -62,7 +70,8 @@ public class FileOperationsTool implements Tool {
             switch (action) {
                 case "read":
                     if (!Files.exists(targetPath)) {
-                        return new ToolInvocation(callId, "file_ops", arguments, "Error: File not found at " + targetPath, false, Instant.now());
+                        final String errMsg = "Error: File not found at " + targetPath;
+                        return new ToolInvocation(callId, "file_ops", arguments, errMsg, false, Instant.now());
                     }
                     output = Files.readString(targetPath);
                     break;
@@ -79,7 +88,8 @@ public class FileOperationsTool implements Tool {
                     break;
                 case "list":
                     if (!Files.exists(targetPath) || !Files.isDirectory(targetPath)) {
-                        return new ToolInvocation(callId, "file_ops", arguments, "Error: Directory not found at " + targetPath, false, Instant.now());
+                        final String errMsg = "Error: Directory not found at " + targetPath;
+                        return new ToolInvocation(callId, "file_ops", arguments, errMsg, false, Instant.now());
                     }
                     final StringBuilder sb = new StringBuilder();
                     try (Stream<Path> stream = Files.list(targetPath)) {

@@ -23,23 +23,39 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Autonomous agent reasoning loop, tool dispatcher, and multi-step execution coordinator.
- * 
+ *
  * Traceability:
- * - Requirement: REQ-00030 (Autonomous Agent Reasoning Loop)
+ * - Requirement: REQ-00043 (Hybrid Reasoning Loop)
+ * - Feature: FR-00014 (Hybrid Reasoning Loop)
+ * - Use Case: UC-00001 (Interactive TUI Pair Programming), UC-00002 (Autonomous Goal Planning)
  * - Task: TSK-20260822-005 (Pluggable Tool Registry & Agent Execution Loop)
+ * - ADR: ADR-0008 (Autonomous Reasoning Loop)
  */
 @Service
 public class AgentEngine {
 
+    /** Logger instance. */
     private static final Logger LOGGER = LoggerFactory.getLogger(AgentEngine.class);
 
+    /** Prefix length for /run command. */
+    private static final int RUN_PREFIX_LENGTH = 5;
+
+    /** Tool registry service. */
     private final ToolRegistry toolRegistry;
+    /** Runtime configuration properties. */
     private final OmniwrenchProperties properties;
+    /** Thread pool for concurrent background reasoning and tool execution. */
     private final ExecutorService agentThreadPool;
 
-    public AgentEngine(final ToolRegistry toolRegistry, final OmniwrenchProperties properties) {
-        this.toolRegistry = Objects.requireNonNull(toolRegistry, "toolRegistry must not be null");
-        this.properties = Objects.requireNonNull(properties, "properties must not be null");
+    /**
+     * Constructs an AgentEngine with tool registry and configuration properties.
+     *
+     * @param toolRegistryVal tool registry service, must not be null
+     * @param propertiesVal configuration properties, must not be null
+     */
+    public AgentEngine(final ToolRegistry toolRegistryVal, final OmniwrenchProperties propertiesVal) {
+        this.toolRegistry = Objects.requireNonNull(toolRegistryVal, "toolRegistry must not be null");
+        this.properties = Objects.requireNonNull(propertiesVal, "properties must not be null");
 
         final int maxThreads = properties.getEngine().getMaxThreads();
         this.agentThreadPool = Executors.newFixedThreadPool(maxThreads, new ThreadFactory() {
@@ -67,7 +83,7 @@ public class AgentEngine {
         final String nonNullPrompt = Objects.requireNonNull(userPrompt, "userPrompt must not be null");
 
         LOGGER.info("AgentEngine processing prompt in session {}: '{}'", nonNullContext.getSessionId(), nonNullPrompt);
-        
+
         final AgentMessage userMessage = AgentMessage.of("user", nonNullPrompt);
         nonNullContext.addMessage(userMessage);
 
@@ -76,7 +92,7 @@ public class AgentEngine {
 
         // Command dispatch simulation / deterministic parsing
         if (nonNullPrompt.startsWith("/run ")) {
-            final String cmd = nonNullPrompt.substring(5).trim();
+            final String cmd = nonNullPrompt.substring(RUN_PREFIX_LENGTH).trim();
             final Optional<Tool> toolOpt = toolRegistry.getTool("run_command");
             if (toolOpt.isPresent()) {
                 final ToolInvocation inv = toolOpt.get().execute(nonNullContext, Map.of("command", cmd));
@@ -96,8 +112,8 @@ public class AgentEngine {
                 responseText = "Error: file_ops tool not found in registry.";
             }
         } else {
-            responseText = "Omniwrench Agent acknowledged: '" + nonNullPrompt 
-                    + "'. Registered tools available: " + toolRegistry.getToolCount() 
+            responseText = "Omniwrench Agent acknowledged: '" + nonNullPrompt
+                    + "'. Registered tools available: " + toolRegistry.getToolCount()
                     + " (file_ops, run_command). Ready for next autonomous cycle.";
         }
 

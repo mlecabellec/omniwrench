@@ -11,22 +11,34 @@ import java.util.Objects;
 
 /**
  * Spring CommandLineRunner that starts the TUI when executed in interactive CLI/Dual mode.
- * 
+ *
  * Traceability:
- * - Requirement: REQ-00042 (Spring Boot TUI Command Line Lifecycle)
+ * - Requirement: REQ-00001 (Dual Headless CLI & Interactive TUI Presentation Engine), REQ-00002 (Configurable Runtime Profiles)
+ * - Feature: FR-00001 (Dual Headless & Interactive Presentation Engine)
+ * - Use Case: UC-00001 (Interactive TUI Pair Programming)
  * - Task: TSK-20260822-003 (Modern Cyberpunk TUI Design & Integration)
+ * - ADR: ADR-0001 (Unified Dual Architecture)
  */
 @Component
-public class TuiRunner implements CommandLineRunner {
+public final class TuiRunner implements CommandLineRunner {
 
+    /** Logger instance. */
     private static final Logger LOGGER = LoggerFactory.getLogger(TuiRunner.class);
 
+    /** Configuration properties instance. */
     private final OmniwrenchProperties properties;
+    /** Interactive TUI dashboard component. */
     private final OmniwrenchTuiDashboard dashboard;
 
-    public TuiRunner(final OmniwrenchProperties properties, final OmniwrenchTuiDashboard dashboard) {
-        this.properties = Objects.requireNonNull(properties, "properties must not be null");
-        this.dashboard = Objects.requireNonNull(dashboard, "dashboard must not be null");
+    /**
+     * Constructs TuiRunner with configuration properties and dashboard loop.
+     *
+     * @param propertiesVal configuration properties, must not be null
+     * @param dashboardVal interactive dashboard component, must not be null
+     */
+    public TuiRunner(final OmniwrenchProperties propertiesVal, final OmniwrenchTuiDashboard dashboardVal) {
+        this.properties = Objects.requireNonNull(propertiesVal, "properties must not be null");
+        this.dashboard = Objects.requireNonNull(dashboardVal, "dashboard must not be null");
     }
 
     @Override

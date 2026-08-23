@@ -21,32 +21,56 @@ import java.util.Optional;
 
 /**
  * REST controller for session interaction, message querying, and autonomous prompt execution.
- * 
+ *
  * Traceability:
- * - Requirement: REQ-00051 (Agent Dialogue REST Endpoints)
+ * - Requirement: REQ-00050 (Headless HTTP/REST & WebSocket Agent Server API), REQ-00051 (RESTful Agent Dialogue & Session Inspection API)
+ * - Feature: FR-00015 (RESTful Agent Dialogue & Session Inspection API)
+ * - Use Case: UC-00003 (Web UI Agent Collaboration), UC-00004 (Headless CI/CD Automation Execution)
  * - Task: TSK-20260822-004 (Spring Web & Reactive WebSocket Server Engine)
+ * - ADR: ADR-0003 (Spring Web MVC & Reactive WebSocket Streaming Architecture)
  */
 @RestController
 @RequestMapping("/api/v1")
-public class AgentController {
+public final class AgentController {
 
+    /** Agent reasoning engine service. */
     private final AgentEngine agentEngine;
+    /** Session manager service. */
     private final SessionManager sessionManager;
+    /** Tool registry service. */
     private final ToolRegistry toolRegistry;
 
-    public AgentController(final AgentEngine agentEngine,
-                           final SessionManager sessionManager,
-                           final ToolRegistry toolRegistry) {
-        this.agentEngine = Objects.requireNonNull(agentEngine, "agentEngine must not be null");
-        this.sessionManager = Objects.requireNonNull(sessionManager, "sessionManager must not be null");
-        this.toolRegistry = Objects.requireNonNull(toolRegistry, "toolRegistry must not be null");
+    /**
+     * Constructs AgentController with engine, session manager, and tool registry.
+     *
+     * @param agentEngineVal the agent reasoning engine, must not be null
+     * @param sessionManagerVal the session manager, must not be null
+     * @param toolRegistryVal the tool registry, must not be null
+     */
+    public AgentController(final AgentEngine agentEngineVal,
+                           final SessionManager sessionManagerVal,
+                           final ToolRegistry toolRegistryVal) {
+        this.agentEngine = Objects.requireNonNull(agentEngineVal, "agentEngine must not be null");
+        this.sessionManager = Objects.requireNonNull(sessionManagerVal, "sessionManager must not be null");
+        this.toolRegistry = Objects.requireNonNull(toolRegistryVal, "toolRegistry must not be null");
     }
 
+    /**
+     * Lists all registered tool definitions.
+     *
+     * @return response entity containing list of tool definitions
+     */
     @GetMapping("/tools")
     public ResponseEntity<List<ToolDefinition>> listTools() {
         return ResponseEntity.ok(toolRegistry.getAllDefinitions());
     }
 
+    /**
+     * Retrieves conversation message history for a specific session.
+     *
+     * @param sessionId session identifier
+     * @return response entity containing list of messages, or 404 if session not found
+     */
     @GetMapping("/sessions/{sessionId}/messages")
     public ResponseEntity<List<AgentMessage>> getMessages(@PathVariable final String sessionId) {
         final Optional<SessionContext> sessionOpt = sessionManager.getSession(sessionId);
@@ -56,6 +80,13 @@ public class AgentController {
         return ResponseEntity.ok(sessionOpt.get().getMessages());
     }
 
+    /**
+     * Dispatches a user prompt to the agent engine for the specified session.
+     *
+     * @param sessionId session identifier
+     * @param payload request body containing "prompt" key
+     * @return response entity containing assistant reply message
+     */
     @PostMapping("/sessions/{sessionId}/prompt")
     public ResponseEntity<AgentMessage> sendPrompt(@PathVariable final String sessionId,
                                                    @RequestBody final Map<String, String> payload) {
