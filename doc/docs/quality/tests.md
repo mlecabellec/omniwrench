@@ -5,9 +5,23 @@ Omniwrench implements a strict, multi-tiered verification strategy adhering to t
 ## Verification Stack
 - **JUnit 5 (Jupiter)**: Execution lifecycle engine and tagged test suites.
 - **AssertJ**: Fluent assertions with comprehensive error message introspection.
-- **Mockito**: Test boundary stubbing for external protocol and process lifecycles.
+- **Mockito (5.18+) & Byte Buddy (1.18.12)**: Test boundary stubbing and dynamic byte transformation fully compatible with modern OpenJDK 17, 21, and 25 runtimes.
 - **Spring Boot Test**: Context initialization and component wiring verification.
 - **Checkstyle & PMD/CPD**: Continuous static quality gates (100% compliant, 0 violations).
+
+## Test Invocations & Commands Matrix
+
+| Scope / Goal | Command | Description |
+|---|---|---|
+| **All Modules & Tests** | `mvn clean test` | Complete verification pass across all 7 reactor artifacts |
+| **Via Helper Tool** | `./omniwrench-helper.sh test` | Automated wrapper executing full clean test suite |
+| **Single Module** | `mvn test -pl omniwrench-tui` | Executes tests exclusively for targeted module |
+| **Specific Test Class** | `mvn test -Dtest=OmniwrenchTuiDashboardTest` | Runs single targeted test class |
+| **Specific Test Method** | `mvn test -Dtest=OmniwrenchTuiDashboardTest#shouldProcessInputAndExit` | Runs single targeted test method |
+| **By Traceability Tag** | `mvn test -Dgroups="REQ-00001"` | Filters test execution by requirement or feature tag |
+| **With JVM Packaging** | `mvn clean package -Pjvm-package` | Builds JVM fat JAR verifying all unit tests |
+| **With Native Profile (Skip Tests)** | `mvn clean package -Pnative -DskipTests` | Compiles AOT native image binary |
+
 
 ## Active Test Matrix & Traceability Mappings
 

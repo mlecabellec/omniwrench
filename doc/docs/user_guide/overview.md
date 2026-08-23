@@ -24,7 +24,26 @@ stop
 ```
 
 ## System Requirements
-- **Java**: OpenJDK 17 or higher (tested with Eclipse Temurin 17 and 21).
+- **Java / GraalVM**: GraalVM SDK / OpenJDK 17, 21, or 25 (tested with Oracle GraalVM / GraalVM Community Edition and Eclipse Temurin).
+- **Native Image**: GraalVM Native Image for standalone AOT compilation (<20ms startup).
 - **Maven**: Apache Maven 3.8+ (or bundled wrapper).
+- **Python**: Python 3.10+ (for GraalVM installer helper and mkdocs documentation engine).
 - **Operating System**: Linux (Debian, SUSE, RHEL, Arch, Ubuntu), macOS, or Windows (WSL2).
 - **Terminal**: Modern ANSI/VT100 terminal supporting 256 colors or UTF-8 box characters.
+
+## GraalVM SDK & Packaging Commands
+
+```bash
+# Automatically download, verify SHA-256, and configure the latest GraalVM SDK
+./omniwrench-helper.sh setup-graalvm
+
+# Activate environment in current terminal session
+source ./activate-env.sh
+
+# Build traditional JVM Spring Boot fat JAR
+./omniwrench-helper.sh build-jvm
+
+# Build standalone GraalVM Native Image binary
+./omniwrench-helper.sh build-native
+```
+

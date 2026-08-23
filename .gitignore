@@ -36,3 +36,5 @@ doc/site/
 doc/documentation.pdf
 doc/man/
 tmp/
+graalvm-env.sh
+

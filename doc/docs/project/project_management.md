@@ -81,3 +81,5 @@ REQ1 --> T6
 | [`TSK-20260822-011`](tasks/TSK-20260822-011.md) | Advanced File Operations & Background Tool Plugin | AI Agent | Ready |
 | [`TSK-20260822-012`](tasks/TSK-20260822-012.md) | Ultra-Precise OpenAPI & JSON Schema Function Calling Registry | AI Agent | Ready |
 | [`TSK-20260822-013`](tasks/TSK-20260822-013.md) | Zero-Mock Runtime Quality Mandate & Automated Gate | AI Agent | Ready |
+| [`TSK-20260822-014`](tasks/TSK-20260822-014.md) | GraalVM SDK Integration & Dual Packaging Profiles | AI Agent | Completed |
+

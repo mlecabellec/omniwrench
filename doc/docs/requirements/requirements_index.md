@@ -12,7 +12,7 @@ This register details all formal system requirements for Omniwrench with full tr
 | [`REQ-00015`](REQ-00015.md) | Single-Binary Documentation Kit (`mkdocs-kit`) | ADR-0003 | High | `helpers/build-docs.sh` Execution | Implemented |
 | [`REQ-00016`](REQ-00016.md) | Maven Multi-Module Modular Architecture (6 Modules) | ADR-0016 | Critical | `mvn clean test` Multi-Module Build | Implemented |
 | [`REQ-00023`](REQ-00023.md) | Goal-, Task-, Requirement- and Test-Oriented Governance | ADR-0023 | High | Living Matrix & Task Audit | Implemented |
-| [`REQ-00025`](REQ-00025.md) | Dual Distribution Packaging (GraalVM Native + Fat JAR) | ADR-0025 | High | AOT Native Build & JAR Verify | Specified |
+| [`REQ-00025`](REQ-00025.md) | Dual Distribution Packaging (GraalVM Native + Fat JAR) | ADR-0025 | High | AOT Native Build & JAR Verify | Implemented |
 | [`REQ-00028`](REQ-00028.md) | Comprehensive 5-Stage Verification Protocol | ADR-0028 | Critical | CI/CD Pipeline & Helper Verify | Implemented |
 | [`REQ-00030`](REQ-00030.md) | Reactive EventBus Engine via Reactor Sinks | ADR-0030 | High | Reactive Event Multicast Test | Implemented |
 | [`REQ-00031`](REQ-00031.md) | Hierarchical Config Layering & AES-256 Secrets Vault | ADR-0031 | High | Secret Masking & Encryption Test | Specified |

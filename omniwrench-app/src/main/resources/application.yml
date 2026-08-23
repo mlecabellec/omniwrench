@@ -9,7 +9,7 @@ spring:
 
 omniwrench:
   mode: ${OMNIWRENCH_MODE:dual} # dual, tui, or web
-  workspace-path: ${OMNIWRENCH_WORKSPACE:.}}
+  workspace-path: ${OMNIWRENCH_WORKSPACE:.}
   tui:
     theme: cyberpunk
     fps-target: 30

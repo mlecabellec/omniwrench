@@ -63,7 +63,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────
   # JOB 2: Package Fat JAR Artifact
   # ─────────────────────────────────────────────────────────────────
-  package:
+  package-jvm:
     name: Package Fat JAR
     runs-on: ubuntu-latest
     needs: test
@@ -80,12 +80,12 @@ jobs:
           cache: maven
 
       - name: Build Spring Boot Fat JAR (skip tests)
-        run: mvn package -DskipTests --batch-mode -q
+        run: mvn clean package -Pjvm-package -DskipTests --batch-mode -q
 
       - name: Locate produced JAR
         id: find-jar
         run: |
-          JAR=$(find omniwrench-app/target -name "*.jar" ! -name "*plain*" | head -1)
+          JAR=$(find omniwrench-app/target -name "*.jar" ! -name "*plain*" ! -name "*.original" | head -1)
           echo "jar_path=$JAR" >> "$GITHUB_OUTPUT"
           echo "jar_name=$(basename $JAR)" >> "$GITHUB_OUTPUT"
 
@@ -97,7 +97,53 @@ jobs:
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────
-  # JOB 3: Build Documentation HTML + PDF
+  # JOB 3: Build GraalVM Native Image
+  # ─────────────────────────────────────────────────────────────────
+  package-native:
+    name: Build GraalVM Native Image
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: 'maven'
+
+      - name: Verify GraalVM Native Image Environment
+        run: |
+          java -version
+          native-image --version
+
+      - name: Build GraalVM Native Binary
+        run: mvn clean package -Pnative -DskipTests --batch-mode
+
+      - name: Locate Native Binary
+        id: find-binary
+        run: |
+          BINARY="omniwrench-app/target/omniwrench"
+          if [[ -f "$BINARY" ]]; then
+            echo "binary_path=$BINARY" >> "$GITHUB_OUTPUT"
+          else
+            echo "Native binary not found at standard path" >&2
+            exit 1
+          fi
+
+      - name: Upload Native Binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: omniwrench-native-linux-x64
+          path: ${{ steps.find-binary.outputs.binary_path }}
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 4: Build Documentation HTML + PDF
   # ─────────────────────────────────────────────────────────────────
   docs:
     name: Build Documentation
@@ -129,12 +175,12 @@ jobs:
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────
-  # JOB 4: GitHub Release on version tags
+  # JOB 5: GitHub Release on version tags
   # ─────────────────────────────────────────────────────────────────
   release:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
-    needs: [ test, package, docs ]
+    needs: [ test, package-jvm, package-native, docs ]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
@@ -148,6 +194,13 @@ jobs:
         with:
           name: omniwrench-fat-jar
           path: release-assets/
+
+      - name: Download Native Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: omniwrench-native-linux-x64
+          path: release-assets/
+
 
       - name: Download HTML site
         uses: actions/download-artifact@v4
@@ -182,6 +235,7 @@ jobs:
 
             | File | Description |
             |---|---|
+            | `omniwrench` | GraalVM Native Image binary (instant <20ms startup) |
             | `omniwrench-app-*.jar` | Spring Boot fat JAR — runs TUI and Web modes |
             | `omniwrench-docs-site-*.zip` | Full HTML documentation site |
             | `omniwrench-manual.pdf` | PDF reference manual |
@@ -189,15 +243,19 @@ jobs:
             ### Usage
 
             ```bash
-            # TUI interactive mode
-            java -jar omniwrench-app-${{ steps.version.outputs.version }}.jar --tui
+            # GraalVM Native Binary (Instant Execution)
+            ./omniwrench tui
+            ./omniwrench server
 
-            # Web / REST API server mode
+            # JVM Fat JAR
+            java -jar omniwrench-app-${{ steps.version.outputs.version }}.jar --tui
             java -jar omniwrench-app-${{ steps.version.outputs.version }}.jar --server
             ```
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
+            release-assets/*omniwrench*
             release-assets/*.jar
             release-assets/*.zip
             release-assets/*.pdf
+
