@@ -117,7 +117,12 @@ public class OmniwrenchTuiDashboard {
         System.out.println("  /help           - Display this help message");
         System.out.println("  /run <command>  - Execute shell command via CommandExecutionTool");
         System.out.println("  /cat <path>     - Read file contents via FileOperationsTool");
+        System.out.println("  /model list     - List locally downloaded quantized GGUF models");
+        System.out.println("  /model search   - Search Ollama and HuggingFace repositories");
+        System.out.println("  /model pull     - Pull and verify GGUF model weights");
+        System.out.println("  /model rm       - Delete local model weights from disk");
         System.out.println("  /tools          - List registered tools and capabilities");
         System.out.println("  exit / quit     - Exit Omniwrench\n");
     }
+
 }

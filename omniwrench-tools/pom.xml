@@ -19,6 +19,11 @@
             <groupId>com.omniwrench</groupId>
             <artifactId>omniwrench-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.omniwrench</groupId>
+            <artifactId>omniwrench-ai</artifactId>
+        </dependency>
+
 
         <!-- Spring context for @Component auto-discovery -->
         <dependency>

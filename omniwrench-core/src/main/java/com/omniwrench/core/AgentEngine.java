@@ -111,11 +111,25 @@ public class AgentEngine {
             } else {
                 responseText = "Error: file_ops tool not found in registry.";
             }
+        } else if (nonNullPrompt.startsWith("/model ") || "/model".equalsIgnoreCase(nonNullPrompt)) {
+            final String subCommand = nonNullPrompt.length() > 6 ? nonNullPrompt.substring(6).trim() : "list";
+            final String[] parts = subCommand.split("\\s+", 2);
+            final String action = parts[0];
+            final String query = parts.length > 1 ? parts[1] : "";
+            final Optional<Tool> toolOpt = toolRegistry.getTool("model_manage");
+            if (toolOpt.isPresent()) {
+                final ToolInvocation inv = toolOpt.get().execute(nonNullContext, Map.of("action", action, "query", query));
+                toolInvocations.add(inv);
+                responseText = inv.getOutput();
+            } else {
+                responseText = "Error: model_manage tool not found in registry.";
+            }
         } else {
             responseText = "Omniwrench Agent acknowledged: '" + nonNullPrompt
                     + "'. Registered tools available: " + toolRegistry.getToolCount()
-                    + " (file_ops, run_command). Ready for next autonomous cycle.";
+                    + " (file_ops, run_command, model_manage). Ready for next autonomous cycle.";
         }
+
 
         final AgentMessage assistantMessage = new AgentMessage(
                 UUID.randomUUID().toString(),

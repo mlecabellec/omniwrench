@@ -76,10 +76,13 @@ REQ1 --> T6
 | [`TSK-20260822-006`](tasks/TSK-20260822-006.md) | Maven Multi-Module Modular Architecture Restructuring | AI Agent | Completed |
 | [`TSK-20260822-007`](tasks/TSK-20260822-007.md) | Dual Chat Mode & Thinking Stream Demultiplexing | AI Agent | Ready |
 | [`TSK-20260822-008`](tasks/TSK-20260822-008.md) | Unified Tri-Interface Prompting & E2E Test Suite | AI Agent | Ready |
-| [`TSK-20260822-009`](tasks/TSK-20260822-009.md) | Embedded llama.cpp LLM Backend Plugin & Native FFM Binding | AI Agent | Ready |
-| [`TSK-20260822-010`](tasks/TSK-20260822-010.md) | Ollama & HuggingFace Model Hub Repository Manager | AI Agent | Ready |
+| [`TSK-20260822-009`](tasks/TSK-20260822-009.md) | Embedded llama.cpp LLM Backend Plugin & Native FFM Binding | AI Agent | Completed |
+| [`TSK-20260822-010`](tasks/TSK-20260822-010.md) | Ollama & HuggingFace Model Hub Repository Manager | AI Agent | Completed |
+
 | [`TSK-20260822-011`](tasks/TSK-20260822-011.md) | Advanced File Operations & Background Tool Plugin | AI Agent | Ready |
 | [`TSK-20260822-012`](tasks/TSK-20260822-012.md) | Ultra-Precise OpenAPI & JSON Schema Function Calling Registry | AI Agent | Ready |
 | [`TSK-20260822-013`](tasks/TSK-20260822-013.md) | Zero-Mock Runtime Quality Mandate & Automated Gate | AI Agent | Ready |
 | [`TSK-20260822-014`](tasks/TSK-20260822-014.md) | GraalVM SDK Integration & Dual Packaging Profiles | AI Agent | Completed |
+| [`TSK-20260822-015`](tasks/TSK-20260822-015.md) | In-Process Embedded llama.cpp Engine for Various CPU/GPU Architectures | AI Agent | In Progress |
+
 
