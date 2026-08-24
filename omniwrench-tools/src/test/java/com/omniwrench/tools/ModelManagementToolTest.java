@@ -73,7 +73,7 @@ class ModelManagementToolTest {
     void testSearchAction() {
         final ToolInvocation searchResult = tool.execute(context, Map.of("action", "search", "query", "gemma"));
         assertThat(searchResult.isSuccess()).isTrue();
-        assertThat(searchResult.getOutput()).contains("gemma2:2b");
+        assertThat(searchResult.getOutput()).contains("gemma2");
     }
 
     @Test

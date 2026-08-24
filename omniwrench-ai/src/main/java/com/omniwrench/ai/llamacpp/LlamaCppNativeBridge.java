@@ -6,9 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -30,6 +27,9 @@ public final class LlamaCppNativeBridge implements AutoCloseable {
     /** Backend identifier for exception reporting. */
     private static final String BACKEND_ID = "llamacpp";
 
+    /** Default fallback vocabulary size. */
+    private static final int DEFAULT_VOCAB_SIZE = 32000;
+
     /** Configuration parameters. */
     private final LlamaCppConfig config;
 
@@ -40,9 +40,9 @@ public final class LlamaCppNativeBridge implements AutoCloseable {
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /**
-     * Constructs a LlamaCppNativeBridge for the given execution configuration.
+     * Constructs a native bridge instance.
      *
-     * @param configVal configuration parameters, must not be null
+     * @param configVal configuration
      */
     public LlamaCppNativeBridge(final LlamaCppConfig configVal) {
         this.config = Objects.requireNonNull(configVal, "config must not be null");
@@ -54,24 +54,27 @@ public final class LlamaCppNativeBridge implements AutoCloseable {
      * @throws BackendException if the model file is missing or initialization fails
      */
     public void initialize() {
-        LlamaCppSignalGuard.runGuarded(() -> {
-            final Path modelFile = Path.of(config.modelPath());
-            if (!Files.exists(modelFile)) {
-                throw new BackendException("Model file does not exist at: " + config.modelPath(), BACKEND_ID);
-            }
+        if (closed.get()) {
+            throw new BackendException("Cannot load model on closed LlamaCppNativeBridge", BACKEND_ID);
+        }
 
+        final Path modelFile = Path.of(config.modelPath());
+        if (!Files.exists(modelFile)) {
+            throw new BackendException("Model file does not exist at: " + config.modelPath(), BACKEND_ID);
+        }
+
+        LlamaCppSignalGuard.runGuarded(() -> {
             LOGGER.info("Initializing in-process llama.cpp model from '{}' (contextSize={}, gpuLayers={}, backend={})",
                     config.modelPath(), config.contextSize(), config.gpuLayers(), config.gpuBackend());
-
             modelLoaded.set(true);
             return null;
         });
     }
 
     /**
-     * Tokenizes prompt text into a sequence of integer token IDs.
+     * Tokenizes input text into integer token identifiers.
      *
-     * @param text prompt text to tokenize
+     * @param text input text
      * @return non-null array of token IDs
      */
     public int[] tokenize(final String text) {
@@ -81,7 +84,7 @@ public final class LlamaCppNativeBridge implements AutoCloseable {
             final String[] words = text.split("\\s+");
             final int[] tokens = new int[Math.max(1, words.length)];
             for (int i = 0; i < words.length; i++) {
-                tokens[i] = Math.abs(words[i].hashCode() % 32000);
+                tokens[i] = Math.abs(words[i].hashCode() % DEFAULT_VOCAB_SIZE);
             }
             return tokens;
         });
@@ -109,7 +112,7 @@ public final class LlamaCppNativeBridge implements AutoCloseable {
     public int sampleNext() {
         return LlamaCppSignalGuard.runGuarded(() -> {
             ensureOpenAndLoaded();
-            return (int) (System.nanoTime() % 32000);
+            return (int) (System.nanoTime() % DEFAULT_VOCAB_SIZE);
         });
     }
 

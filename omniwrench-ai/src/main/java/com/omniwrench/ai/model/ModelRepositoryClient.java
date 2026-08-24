@@ -51,6 +51,21 @@ public class ModelRepositoryClient {
     private static final int HTTP_OK_MIN = 200;
     /** HTTP Status Redirection/Error minimum bound. */
     private static final int HTTP_REDIRECTION_MIN = 300;
+    /** SHA-256 prefix length for 'sha256:'. */
+    private static final int SHA256_PREFIX_LENGTH = 7;
+
+    /** Regex matching Ollama search model cards. */
+    private static final java.util.regex.Pattern OLLAMA_CARD_PATTERN = java.util.regex.Pattern.compile(
+            "<a\\s+href=\"/(library/[^\"]+|[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)\"[^>]*>([\\s\\S]*?)</a>"
+    );
+    /** Regex matching Ollama model card description paragraph. */
+    private static final java.util.regex.Pattern OLLAMA_DESC_PATTERN = java.util.regex.Pattern.compile(
+            "<p class=\"[^\"]*text-neutral-800[^\"]*\">([^<]+)</p>"
+    );
+    /** Regex matching Ollama parameter size badge tags. */
+    private static final java.util.regex.Pattern OLLAMA_TAG_PATTERN = java.util.regex.Pattern.compile(
+            "text-blue-600[^\"]*\">([^<]+)</span>"
+    );
 
     /** Shared HTTP client with redirect following. */
     private final HttpClient httpClient;
@@ -150,11 +165,13 @@ public class ModelRepositoryClient {
             ));
         }
 
-        final HttpRequest request = HttpRequest.newBuilder()
+        final HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(descriptor.downloadUrl()))
                 .header("User-Agent", "Omniwrench/0.1.0 (Autonomous-Agent-Workbench)")
-                .GET()
-                .build();
+                .GET();
+        appendAuthHeaderIfPresent(reqBuilder);
+
+        final HttpRequest request = reqBuilder.build();
 
         final HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
         final int statusCode = response.statusCode();
@@ -214,7 +231,8 @@ public class ModelRepositoryClient {
             final String expected = descriptor.sha256().toLowerCase(Locale.ROOT).trim();
             if (!expected.equals(calculatedSha256.toLowerCase(Locale.ROOT))) {
                 Files.deleteIfExists(partPath);
-                throw new IllegalStateException("SHA-256 verification mismatch! Expected: " + expected + ", calculated: " + calculatedSha256);
+                throw new IllegalStateException("SHA-256 verification mismatch! Expected: "
+                        + expected + ", calculated: " + calculatedSha256);
             }
         }
 
@@ -236,69 +254,52 @@ public class ModelRepositoryClient {
 
     private List<ModelDescriptor> searchOllama(final String query) {
         final List<ModelDescriptor> list = new ArrayList<>();
-        final String qwenUrl = "https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/resolve/main/"
-                + "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf";
+        try {
+            final String queryStr = query == null ? "" : query.trim();
+            final String encoded = URLEncoder.encode(queryStr, StandardCharsets.UTF_8);
+            final String url = "https://ollama.com/search?q=" + encoded;
+            final HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("User-Agent", "Omniwrench/0.1.0")
+                    .timeout(Duration.ofSeconds(CONNECT_TIMEOUT_SECONDS))
+                    .GET()
+                    .build();
 
-        final List<ModelDescriptor> catalog = List.of(
-                new ModelDescriptor(
-                        "gemma2:2b",
-                        "Google Gemma 2 2B (Ollama Q4_K_M)",
-                        ModelSource.OLLAMA,
-                        "GGUF",
-                        "Q4_K_M",
-                        "2.6B",
-                        1638400000L,
-                        "https://huggingface.co/google/gemma-2-2b-it-GGUF/resolve/main/2b_it_v2.gguf",
-                        null,
-                        null,
-                        false
-                ),
-                new ModelDescriptor(
-                        "qwen2.5-coder:1.5b",
-                        "Qwen 2.5 Coder 1.5B (Ollama Q4_K_M)",
-                        ModelSource.OLLAMA,
-                        "GGUF",
-                        "Q4_K_M",
-                        "1.5B",
-                        986000000L,
-                        qwenUrl,
-                        null,
-                        null,
-                        false
-                ),
-                new ModelDescriptor(
-                        "llama3.2:1b",
-                        "Meta Llama 3.2 1B (Ollama Q4_K_M)",
-                        ModelSource.OLLAMA,
-                        "GGUF",
-                        "Q4_K_M",
-                        "1.2B",
-                        812000000L,
-                        "https://huggingface.co/unsloth/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
-                        null,
-                        null,
-                        false
-                ),
-                new ModelDescriptor(
-                        "deepseek-r1:1.5b",
-                        "DeepSeek R1 Distill Qwen 1.5B (Ollama Q4_K_M)",
-                        ModelSource.OLLAMA,
-                        "GGUF",
-                        "Q4_K_M",
-                        "1.7B",
-                        1120000000L,
-                        "https://huggingface.co/unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF/resolve/main/DeepSeek-R1-Distill-Qwen-1.5B-Q4_K_M.gguf",
-                        null,
-                        null,
-                        false
-                )
-        );
+            final HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() == HTTP_OK_MIN) {
+                final java.util.regex.Matcher matcher = OLLAMA_CARD_PATTERN.matcher(resp.body());
+                while (matcher.find()) {
+                    final String rawHref = matcher.group(1);
+                    final String modelSlug = rawHref.replace("library/", "");
+                    final String cardContent = matcher.group(2);
 
-        for (final ModelDescriptor md : catalog) {
-            if (query.isEmpty() || md.id().toLowerCase(Locale.ROOT).contains(query)
-                    || md.name().toLowerCase(Locale.ROOT).contains(query)) {
-                list.add(md);
+                    final java.util.regex.Matcher descMatcher = OLLAMA_DESC_PATTERN.matcher(cardContent);
+                    final String desc = descMatcher.find() ? descMatcher.group(1).trim() : modelSlug;
+
+                    final List<String> tags = new ArrayList<>();
+                    final java.util.regex.Matcher tagMatcher = OLLAMA_TAG_PATTERN.matcher(cardContent);
+                    while (tagMatcher.find()) {
+                        tags.add(tagMatcher.group(1).trim());
+                    }
+
+                    final String paramSize = tags.isEmpty() ? "LATEST" : String.join(", ", tags);
+                    list.add(new ModelDescriptor(
+                            modelSlug,
+                            desc,
+                            ModelSource.OLLAMA,
+                            "GGUF",
+                            "Q4_K_M",
+                            paramSize,
+                            0L,
+                            null,
+                            null,
+                            null,
+                            false
+                    ));
+                }
             }
+        } catch (final Exception e) {
+            LOGGER.warn("Failed querying live Ollama search for '{}': {}", query, e.getMessage());
         }
         return list;
     }
@@ -312,14 +313,14 @@ public class ModelRepositoryClient {
         try {
             final String encodedQuery = URLEncoder.encode(query + " GGUF", StandardCharsets.UTF_8);
             final String url = "https://huggingface.co/api/models?search=" + encodedQuery + "&filter=gguf&limit=10";
-            final HttpRequest req = HttpRequest.newBuilder()
+            final HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("User-Agent", "Omniwrench/0.1.0")
                     .timeout(Duration.ofSeconds(CONNECT_TIMEOUT_SECONDS))
-                    .GET()
-                    .build();
+                    .GET();
+            appendAuthHeaderIfPresent(reqBuilder);
 
-            final HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+            final HttpResponse<String> resp = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() == HTTP_OK_MIN) {
                 final JsonNode root = objectMapper.readTree(resp.body());
                 if (root.isArray()) {
@@ -350,10 +351,101 @@ public class ModelRepositoryClient {
     }
 
     private Optional<ModelDescriptor> getOllamaMetadata(final String modelId) {
-        return searchOllama("").stream().filter(m -> m.id().equalsIgnoreCase(modelId)).findFirst();
+        final String repo;
+        final String tag;
+        if (modelId.contains(":")) {
+            final String[] parts = modelId.split(":", 2);
+            repo = parts[0].trim();
+            tag = parts[1].trim();
+        } else {
+            repo = modelId.trim();
+            tag = "latest";
+        }
+
+        try {
+            final String manifestUrl = "https://registry.ollama.ai/v2/library/" + repo + "/manifests/" + tag;
+            final HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(manifestUrl))
+                    .header("Accept", "application/vnd.docker.distribution.manifest.v2+json")
+                    .header("User-Agent", "Omniwrench/0.1.0")
+                    .timeout(Duration.ofSeconds(CONNECT_TIMEOUT_SECONDS))
+                    .GET()
+                    .build();
+
+            final HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() == HTTP_OK_MIN) {
+                final JsonNode root = objectMapper.readTree(resp.body());
+                final JsonNode layers = root.path("layers");
+                if (layers.isArray()) {
+                    for (final JsonNode layer : layers) {
+                        final String mediaType = layer.path("mediaType").asText();
+                        if ("application/vnd.ollama.image.model".equals(mediaType)) {
+                            final String digest = layer.path("digest").asText();
+                            final long size = layer.path("size").asLong(0L);
+                            final String cleanSha = digest.startsWith("sha256:")
+                                    ? digest.substring(SHA256_PREFIX_LENGTH) : digest;
+                            final String blobUrl = "https://registry.ollama.ai/v2/library/" + repo + "/blobs/" + digest;
+
+                            return Optional.of(new ModelDescriptor(
+                                    modelId,
+                                    repo + " (" + tag + ")",
+                                    ModelSource.OLLAMA,
+                                    "GGUF",
+                                    "Q4_K_M",
+                                    tag.toUpperCase(Locale.ROOT),
+                                    size,
+                                    blobUrl,
+                                    cleanSha,
+                                    null,
+                                    false
+                            ));
+                        }
+                    }
+                }
+            }
+        } catch (final Exception e) {
+            LOGGER.warn("Failed resolving Ollama registry manifest for '{}': {}", modelId, e.getMessage());
+        }
+
+        return Optional.empty();
     }
 
     private Optional<ModelDescriptor> getHuggingFaceMetadata(final String modelId) {
+        try {
+            final String treeUrl = "https://huggingface.co/api/models/" + modelId + "/tree/main";
+            final HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(treeUrl))
+                    .header("User-Agent", "Omniwrench/0.1.0")
+                    .timeout(Duration.ofSeconds(CONNECT_TIMEOUT_SECONDS))
+                    .GET();
+            appendAuthHeaderIfPresent(reqBuilder);
+
+            final HttpResponse<String> resp = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() == HTTP_OK_MIN) {
+                final JsonNode root = objectMapper.readTree(resp.body());
+                if (root.isArray()) {
+                    final GgufFileSelection selection = selectOptimalGguf(root);
+                    if (selection != null) {
+                        return Optional.of(new ModelDescriptor(
+                                modelId,
+                                modelId,
+                                ModelSource.HUGGING_FACE,
+                                "GGUF",
+                                selection.quantization(),
+                                selection.parameterSize(),
+                                selection.sizeBytes(),
+                                "https://huggingface.co/" + modelId + "/resolve/main/" + selection.filename(),
+                                null,
+                                null,
+                                false
+                        ));
+                    }
+                }
+            }
+        } catch (final Exception e) {
+            LOGGER.warn("Failed resolving HuggingFace file tree for '{}': {}", modelId, e.getMessage());
+        }
+
         return Optional.of(new ModelDescriptor(
                 modelId,
                 modelId,
@@ -367,6 +459,131 @@ public class ModelRepositoryClient {
                 null,
                 false
         ));
+    }
+
+    private void appendAuthHeaderIfPresent(final HttpRequest.Builder builder) {
+        final String envToken = System.getenv("HF_TOKEN");
+        final String hubToken = System.getenv("HUGGING_FACE_HUB_TOKEN");
+        final String propToken = System.getProperty("hf.token");
+        String token = null;
+        if (envToken != null && !envToken.isBlank()) {
+            token = envToken.trim();
+        } else if (hubToken != null && !hubToken.isBlank()) {
+            token = hubToken.trim();
+        } else if (propToken != null && !propToken.isBlank()) {
+            token = propToken.trim();
+        }
+
+        if (token != null) {
+            builder.header("Authorization", "Bearer " + token);
+        }
+    }
+
+    private GgufFileSelection selectOptimalGguf(final JsonNode treeArray) {
+        GgufFileSelection best = null;
+        int bestScore = -1;
+
+        for (final JsonNode node : treeArray) {
+            final String path = node.path("path").asText("");
+            if (path.endsWith(".gguf") && !path.startsWith("mmproj")) {
+                final long size = node.path("size").asLong(0L);
+                final int score = scoreQuantization(path);
+                if (score > bestScore) {
+                    bestScore = score;
+                    final String quant = extractQuantization(path);
+                    final String paramSize = extractParameterSize(path);
+                    best = new GgufFileSelection(path, quant, paramSize, size);
+                }
+            }
+        }
+        return best;
+    }
+
+    private int scoreQuantization(final String filename) {
+        final String upper = filename.toUpperCase(Locale.ROOT);
+        final int scoreQ4KM = 100;
+        final int scoreQ40 = 90;
+        final int scoreQ4KS = 85;
+        final int scoreQ41 = 80;
+        final int scoreQ5KM = 70;
+        final int scoreQ3KM = 60;
+        final int scoreQ3KS = 50;
+        final int scoreIQ4 = 40;
+        final int scoreFallback = 10;
+
+        if (upper.contains("Q4_K_M")) {
+            return scoreQ4KM;
+        } else if (upper.contains("Q4_0")) {
+            return scoreQ40;
+        } else if (upper.contains("Q4_K_S")) {
+            return scoreQ4KS;
+        } else if (upper.contains("Q4_1")) {
+            return scoreQ41;
+        } else if (upper.contains("Q5_K_M") || upper.contains("Q5_0")) {
+            return scoreQ5KM;
+        } else if (upper.contains("Q3_K_M")) {
+            return scoreQ3KM;
+        } else if (upper.contains("Q3_K_S")) {
+            return scoreQ3KS;
+        } else if (upper.contains("IQ4")) {
+            return scoreIQ4;
+        }
+        return scoreFallback;
+    }
+
+    private String extractQuantization(final String filename) {
+        final String upper = filename.toUpperCase(Locale.ROOT);
+        if (upper.contains("Q4_K_M")) {
+            return "Q4_K_M";
+        } else if (upper.contains("Q4_0")) {
+            return "Q4_0";
+        } else if (upper.contains("Q4_K_S")) {
+            return "Q4_K_S";
+        } else if (upper.contains("Q4_1")) {
+            return "Q4_1";
+        } else if (upper.contains("Q5_K_M")) {
+            return "Q5_K_M";
+        } else if (upper.contains("Q3_K_M")) {
+            return "Q3_K_M";
+        } else if (upper.contains("Q3_K_S")) {
+            return "Q3_K_S";
+        } else if (upper.contains("Q8_0")) {
+            return "Q8_0";
+        } else if (upper.contains("IQ4_NL")) {
+            return "IQ4_NL";
+        } else if (upper.contains("IQ4_XS")) {
+            return "IQ4_XS";
+        }
+        return "GGUF";
+    }
+
+    private String extractParameterSize(final String filename) {
+        final String upper = filename.toUpperCase(Locale.ROOT);
+        if (upper.contains("E2B")) {
+            return "E2B";
+        } else if (upper.contains("E4B")) {
+            return "E4B";
+        } else if (upper.contains("1.5B")) {
+            return "1.5B";
+        } else if (upper.contains("2B")) {
+            return "2B";
+        } else if (upper.contains("3B")) {
+            return "3B";
+        } else if (upper.contains("7B")) {
+            return "7B";
+        } else if (upper.contains("8B")) {
+            return "8B";
+        } else if (upper.contains("12B")) {
+            return "12B";
+        } else if (upper.contains("26B")) {
+            return "26B";
+        } else if (upper.contains("31B")) {
+            return "31B";
+        }
+        return "N/A";
+    }
+
+    private record GgufFileSelection(String filename, String quantization, String parameterSize, long sizeBytes) {
     }
 
     private ModelSource inferSource(final String modelId) {

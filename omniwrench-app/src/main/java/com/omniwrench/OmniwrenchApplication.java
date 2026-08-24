@@ -13,6 +13,7 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ImportRuntimeHints;
 
 import java.util.Objects;
@@ -48,7 +49,6 @@ public class OmniwrenchApplication {
         }
     }
 
-
     /** Application logger instance. */
     private static final Logger LOGGER = LoggerFactory.getLogger(OmniwrenchApplication.class);
 
@@ -66,6 +66,21 @@ public class OmniwrenchApplication {
     public static void main(final String[] args) {
         final String[] nonNullArgs = Objects.requireNonNull(args, "Command line arguments must not be null");
         LOGGER.info("Starting Omniwrench Dual Workbench Engine...");
-        SpringApplication.run(OmniwrenchApplication.class, nonNullArgs);
+        final ConfigurableApplicationContext context =
+                SpringApplication.run(OmniwrenchApplication.class, nonNullArgs);
+        if (isSingleShotArgument(nonNullArgs)) {
+            final int exitCode = SpringApplication.exit(context, () -> 0);
+            System.exit(exitCode);
+        }
+    }
+
+    private static boolean isSingleShotArgument(final String[] args) {
+        if (args.length == 0) {
+            return false;
+        }
+        final String first = args[0];
+        return "-p".equals(first) || "--prompt".equals(first) || "-".equals(first)
+                || "--help".equalsIgnoreCase(first) || "-h".equalsIgnoreCase(first)
+                || "--version".equalsIgnoreCase(first) || "-v".equalsIgnoreCase(first);
     }
 }
