@@ -178,20 +178,60 @@ def verify_sha256(file_path: Path, sha256_url: str | None) -> bool:
         )
 
 
+def ensure_permissions(root_dir: Path) -> None:
+    """Ensures directories, executables, and files have proper read/write/execute permissions."""
+    if not root_dir.exists():
+        return
+    try:
+        root_dir.chmod(root_dir.stat().st_mode | 0o755)
+    except Exception:
+        pass
+
+    for path in root_dir.rglob("*"):
+        try:
+            if path.is_dir():
+                path.chmod(path.stat().st_mode | 0o755)
+            elif path.is_file():
+                mode = path.stat().st_mode | 0o644
+                if "bin" in path.parts or path.suffix in (".so", ".dylib", ".exe", ".dll") or (path.stat().st_mode & 0o111):
+                    mode |= 0o755
+                path.chmod(mode)
+        except Exception:
+            pass
+
+
+def safe_remove_dir(directory: Path) -> None:
+    """Safely removes a directory tree, ensuring permissions do not block deletion."""
+    if not directory.exists():
+        return
+    for path in directory.rglob("*"):
+        try:
+            if path.is_dir():
+                path.chmod(0o755)
+            else:
+                path.chmod(0o644)
+        except Exception:
+            pass
+    try:
+        directory.chmod(0o755)
+    except Exception:
+        pass
+    shutil.rmtree(directory, ignore_errors=True)
+
+
 def extract_archive(archive_path: Path, target_dir: Path) -> Path:
     """
     Extracts zip or tar.gz archive into target_dir and returns the root extracted JDK directory.
+    Checks if the target directory already exists and ensures access rights are settled.
     """
     target_dir.mkdir(parents=True, exist_ok=True)
-    print(f"[INFO] Extracting {archive_path.name} to {target_dir}...")
 
+    top_level: set[str] = set()
     if archive_path.name.endswith(".zip"):
         with zipfile.ZipFile(archive_path, "r") as zip_ref:
-            zip_ref.extractall(target_dir)
             top_level = {item.split("/")[0] for item in zip_ref.namelist() if "/" in item}
     elif archive_path.name.endswith(".tar.gz") or archive_path.name.endswith(".tgz"):
         with tarfile.open(archive_path, "r:gz") as tar_ref:
-            tar_ref.extractall(target_dir)
             top_level = {member.name.split("/")[0] for member in tar_ref.getmembers() if "/" in member.name}
     else:
         raise ValueError(f"Unknown archive format: {archive_path.name}")
@@ -200,6 +240,31 @@ def extract_archive(archive_path: Path, target_dir: Path) -> Path:
         extracted_root = target_dir / list(top_level)[0]
     else:
         extracted_root = target_dir
+
+    if extracted_root.exists() and (extracted_root / "bin" / "java").exists():
+        print(f"[INFO] Existing GraalVM SDK directory detected at {extracted_root}.")
+        print(f"[INFO] Verifying and ensuring access permissions...")
+        ensure_permissions(extracted_root)
+        print(f"[SUCCESS] GraalVM SDK verified and ready at: {extracted_root}")
+        return extracted_root
+
+    if extracted_root.exists():
+        print(f"[INFO] Incomplete installation detected at {extracted_root}, cleaning before extraction...")
+        safe_remove_dir(extracted_root)
+
+    print(f"[INFO] Extracting {archive_path.name} to {target_dir}...")
+    if archive_path.name.endswith(".zip"):
+        with zipfile.ZipFile(archive_path, "r") as zip_ref:
+            zip_ref.extractall(target_dir)
+    elif archive_path.name.endswith(".tar.gz") or archive_path.name.endswith(".tgz"):
+        with tarfile.open(archive_path, "r:gz") as tar_ref:
+            if hasattr(tarfile, "data_filter"):
+                tar_ref.extractall(target_dir, filter="data")
+            else:
+                tar_ref.extractall(target_dir)
+
+    print(f"[INFO] Ensuring proper access permissions on extracted files...")
+    ensure_permissions(extracted_root)
 
     print(f"[SUCCESS] Extracted GraalVM JDK root: {extracted_root}")
     return extracted_root
@@ -230,6 +295,7 @@ fi
 
 
 def main() -> int:
+    default_env_path = Path(__file__).resolve().parent.parent / "graalvm-env.sh"
     parser = argparse.ArgumentParser(
         description="Download and setup latest GraalVM SDK for Omniwrench."
     )
@@ -248,8 +314,8 @@ def main() -> int:
     parser.add_argument(
         "--env-file",
         type=Path,
-        default=Path("graalvm-env.sh"),
-        help="Output path for environment configuration script (default: graalvm-env.sh)",
+        default=default_env_path,
+        help=f"Output path for environment configuration script (default: {default_env_path})",
     )
     parser.add_argument(
         "--detect-only",
@@ -290,7 +356,7 @@ def main() -> int:
 
     if args.clean and target_dir.exists():
         print(f"[INFO] Cleaning target directory: {target_dir}")
-        shutil.rmtree(target_dir)
+        safe_remove_dir(target_dir)
         download_dir.mkdir(parents=True, exist_ok=True)
 
     if not archive_file.exists():
