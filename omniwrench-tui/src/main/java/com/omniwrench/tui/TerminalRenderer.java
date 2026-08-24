@@ -8,11 +8,11 @@ import java.util.Objects;
  * High-impact Cyberpunk terminal renderer providing ANSI styled widgets, neon banners, and status pills.
  *
  * Traceability:
- * - Requirement: REQ-00001 (Dual Headless CLI & Interactive TUI Presentation Engine), REQ-00043 (Hybrid Reasoning Loop)
+ * - Requirement: REQ-00001 (Dual Headless CLI & Interactive TUI Presentation Engine), REQ-00088 (Dual Chat Mode Reasoning)
  * - Feature: FR-00001 (Dual Headless & Interactive Presentation Engine)
  * - Use Case: UC-00001 (Interactive TUI Pair Programming)
- * - Task: TSK-20260822-003 (Modern Cyberpunk TUI Design & Integration)
- * - ADR: ADR-0001 (Unified Dual Architecture)
+ * - Task: TSK-20260822-003 (Modern Cyberpunk TUI Design), TSK-20260822-007 (Dual Chat Mode & Thinking Demux)
+ * - ADR: ADR-0001 (Unified Dual Architecture), ADR-0047 (Dual Chat Mode & Explicit Reasoning Demux)
  */
 @Component
 public final class TerminalRenderer {
@@ -21,6 +21,8 @@ public final class TerminalRenderer {
     public static final String RESET = "\u001B[0m";
     /** ANSI code for bold text. */
     public static final String BOLD = "\u001B[1m";
+    /** ANSI code for dim text. */
+    public static final String DIM = "\u001B[2m";
     /** ANSI code for cyan color. */
     public static final String CYAN = "\u001B[36m";
     /** ANSI code for magenta color. */
@@ -33,6 +35,8 @@ public final class TerminalRenderer {
     public static final String RED = "\u001B[31m";
     /** ANSI code for bright white color. */
     public static final String BRIGHT_WHITE = "\u001B[97m";
+    /** ANSI code for gray color. */
+    public static final String GRAY = "\u001B[90m";
     /** ANSI code for dark background. */
     public static final String BG_DARK = "\u001B[48;5;234m";
     /** ANSI code for cyan background. */
@@ -80,6 +84,19 @@ public final class TerminalRenderer {
     public String renderPromptBox(final String promptText) {
         final String text = Objects.requireNonNull(promptText, "promptText must not be null");
         return MAGENTA + BOLD + "omniwrench> " + RESET + BRIGHT_WHITE + text;
+    }
+
+    /**
+     * Renders an expandable/dimmed neon reasoning thinking box.
+     *
+     * @param thoughtContent internal reasoning thoughts
+     * @return formatted cyberpunk thought box
+     */
+    public String renderThinkingBox(final String thoughtContent) {
+        final String nonNullThought = Objects.requireNonNull(thoughtContent, "thoughtContent must not be null");
+        return YELLOW + BOLD + "┌── [REASONING / THINKING STREAM]" + RESET + "\n"
+                + YELLOW + "│ " + GRAY + nonNullThought.replace("\n", "\n" + YELLOW + "│ " + GRAY) + "\n"
+                + YELLOW + "└──" + RESET;
     }
 
     /**

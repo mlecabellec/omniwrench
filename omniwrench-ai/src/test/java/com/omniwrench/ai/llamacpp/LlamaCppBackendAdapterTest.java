@@ -9,10 +9,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,11 +26,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * - Requirement: REQ-00090 (Embedded llama.cpp Local LLM Backend Plugin with JNI/FFM Bindings)
  * - Feature: FR-00011 (Multi-Modal Typed AI Abstraction), FR-00012 (Universal Pluggable AI Adapters)
  * - Use Case: UC-00001 (Interactive TUI Pair Programming)
- * - Task: TSK-20260822-009 (Embedded llama.cpp Backend)
+ * - Task: TSK-20260822-009 (Embedded llama.cpp Backend), TSK-20260822-015 (Multi-Arch llama.cpp Engine)
  * - ADR: ADR-0049 (llama.cpp Embedded Inference Engine)
  */
 @Tag("REQ-00090")
+@Tag("REQ-00093")
 @Tag("TSK-20260822-009")
+@Tag("TSK-20260822-015")
 class LlamaCppBackendAdapterTest {
 
     @Test
@@ -42,6 +46,8 @@ class LlamaCppBackendAdapterTest {
         assertThat(config.temperature()).isEqualTo(0.7);
         assertThat(config.topP()).isEqualTo(0.9);
         assertThat(config.repeatPenalty()).isEqualTo(1.1);
+        assertThat(config.gpuBackend()).isEqualTo(NativeLibraryLoader.GpuBackend.CPU);
+        assertThat(config.gpuLayers()).isZero();
     }
 
     @Test
@@ -54,7 +60,6 @@ class LlamaCppBackendAdapterTest {
         assertThat(adapter.supports(new MediaType.TextCompletion("text", 100), ExecutionMode.SYNCHRONOUS)).isTrue();
         assertThat(adapter.supports(new MediaType.ImageGeneration("png", 512, 512), ExecutionMode.SYNCHRONOUS)).isFalse();
     }
-
 
     @Test
     @DisplayName("LlamaCppBackendAdapter should throw BackendException if model file does not exist")
@@ -95,5 +100,26 @@ class LlamaCppBackendAdapterTest {
         assertThat(response.getResolvedModel()).isEqualTo("test_weights");
         assertThat(response.getTimestamp()).isNotNull();
     }
-}
 
+    @Test
+    @DisplayName("LlamaCppBackendAdapter should stream tokens reactively via executeStream")
+    void testStreamingExecution(@TempDir final Path tempDir) throws IOException {
+        final Path modelFile = tempDir.resolve("stream_weights.gguf");
+        Files.writeString(modelFile, "GGUF_STREAM_HEADER");
+
+        final LlamaCppBackendAdapter adapter = new LlamaCppBackendAdapter(LlamaCppConfig.of(modelFile.toString()));
+        final ModelRequest<MediaType.ChatReasoning> request = new ModelRequest<>(
+                new MediaType.ChatReasoning("Stream token prompt", 5),
+                ExecutionMode.SYNCHRONOUS,
+                "stream_weights",
+                null
+        );
+
+        final Flux<String> stream = adapter.executeStream(request);
+        final List<String> emittedTokens = stream.collectList().block();
+
+        assertThat(emittedTokens).isNotNull();
+        assertThat(emittedTokens).hasSize(5);
+        assertThat(emittedTokens.get(0)).contains("token_");
+    }
+}

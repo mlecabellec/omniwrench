@@ -9,19 +9,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Unit tests verifying Cyberpunk ANSI widget rendering, status bars, and message bubbles.
+ * Unit tests verifying Cyberpunk ANSI widget rendering, status bars, message bubbles, and thinking boxes.
  *
  * Traceability:
- * - Requirement: REQ-00001 (Dual Headless CLI & Interactive TUI Presentation Engine), REQ-00043 (Hybrid Reasoning Loop)
+ * - Requirement: REQ-00001 (Dual Headless CLI & Interactive TUI Presentation Engine), REQ-00043 (Hybrid Reasoning Loop), REQ-00088 (Dual Chat Mode Reasoning)
  * - Feature: FR-00001 (Dual Headless & Interactive Presentation Engine)
  * - Use Case: UC-00001 (Interactive TUI Pair Programming)
- * - Task: TSK-20260822-003 (Modern Cyberpunk TUI Design & Integration)
- * - ADR: ADR-0001 (Unified Dual Architecture)
+ * - Task: TSK-20260822-003 (Modern Cyberpunk TUI Design), TSK-20260822-007 (Dual Chat Mode & Thinking Demux)
+ * - ADR: ADR-0001 (Unified Dual Architecture), ADR-0047 (Reasoning Demux)
  */
 @Tag("REQ-00001")
+@Tag("REQ-00088")
 @Tag("FR-00001")
 @Tag("UC-00001")
 @Tag("TSK-20260822-003")
+@Tag("TSK-20260822-007")
 class TerminalRendererTest {
 
     private TerminalRenderer renderer;
@@ -64,6 +66,16 @@ class TerminalRendererTest {
     }
 
     @Test
+    @DisplayName("Should render neon reasoning thinking box")
+    void shouldRenderThinkingBox() {
+        final String thoughtBox = renderer.renderThinkingBox("Analyzing code structures...\nSynthesizing answer.");
+        assertThat(thoughtBox)
+                .contains("REASONING / THINKING STREAM")
+                .contains("Analyzing code structures...")
+                .contains("Synthesizing answer.");
+    }
+
+    @Test
     @DisplayName("Should render prompt box with custom command prefix")
     void shouldRenderPromptBox() {
         final String prompt = renderer.renderPromptBox("ls -la");
@@ -74,6 +86,7 @@ class TerminalRendererTest {
     @DisplayName("Should reject null arguments during rendering")
     void shouldRejectNullArguments() {
         assertThrows(NullPointerException.class, () -> renderer.renderPromptBox(null));
+        assertThrows(NullPointerException.class, () -> renderer.renderThinkingBox(null));
         assertThrows(NullPointerException.class, () -> renderer.renderMessageBubble(null, "content"));
         assertThrows(NullPointerException.class, () -> renderer.renderMessageBubble("user", null));
     }

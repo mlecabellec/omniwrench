@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,11 +26,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Autonomous agent reasoning loop, tool dispatcher, and multi-step execution coordinator.
  *
  * Traceability:
- * - Requirement: REQ-00043 (Hybrid Reasoning Loop)
- * - Feature: FR-00014 (Hybrid Reasoning Loop)
+ * - Requirement: REQ-00043 (Hybrid Reasoning Loop), REQ-00088 (Dual Chat Mode Reasoning Demux)
+ * - Feature: FR-00014 (Hybrid Reasoning Loop), FR-00011 (Multi-Modal Typed AI Abstraction)
  * - Use Case: UC-00001 (Interactive TUI Pair Programming), UC-00002 (Autonomous Goal Planning)
- * - Task: TSK-20260822-005 (Pluggable Tool Registry & Agent Execution Loop)
- * - ADR: ADR-0008 (Autonomous Reasoning Loop)
+ * - Task: TSK-20260822-005 (Pluggable Tool Registry), TSK-20260822-007 (Dual Chat Mode & Thinking Demux)
+ * - ADR: ADR-0008 (Autonomous Reasoning Loop), ADR-0047 (Dual Chat Mode & Reasoning Demux)
  */
 @Service
 public class AgentEngine {
@@ -39,6 +40,10 @@ public class AgentEngine {
 
     /** Prefix length for /run command. */
     private static final int RUN_PREFIX_LENGTH = 5;
+    /** Prefix length for /model command. */
+    private static final int MODEL_PREFIX_LENGTH = 6;
+    /** Prefix length for /thinking command. */
+    private static final int THINKING_PREFIX_LENGTH = 9;
 
     /** Tool registry service. */
     private final ToolRegistry toolRegistry;
@@ -46,6 +51,11 @@ public class AgentEngine {
     private final OmniwrenchProperties properties;
     /** Thread pool for concurrent background reasoning and tool execution. */
     private final ExecutorService agentThreadPool;
+
+    /** Active thinking effort level. */
+    private volatile String thinkingEffort = "medium";
+    /** Dual chat mode thinking toggle flag. */
+    private volatile boolean thinkingEnabled = true;
 
     /**
      * Constructs an AgentEngine with tool registry and configuration properties.
@@ -72,6 +82,42 @@ public class AgentEngine {
     }
 
     /**
+     * Returns true if reasoning thinking mode is active.
+     *
+     * @return true if thinking is enabled
+     */
+    public boolean isThinkingEnabled() {
+        return thinkingEnabled;
+    }
+
+    /**
+     * Sets thinking mode enablement.
+     *
+     * @param enabledVal true to enable thinking mode
+     */
+    public void setThinkingEnabled(final boolean enabledVal) {
+        this.thinkingEnabled = enabledVal;
+    }
+
+    /**
+     * Returns current thinking effort level (low, medium, high, max).
+     *
+     * @return thinking effort string
+     */
+    public String getThinkingEffort() {
+        return thinkingEffort;
+    }
+
+    /**
+     * Sets thinking effort level.
+     *
+     * @param effortVal effort string (low, medium, high, max)
+     */
+    public void setThinkingEffort(final String effortVal) {
+        this.thinkingEffort = Objects.requireNonNull(effortVal, "effort must not be null");
+    }
+
+    /**
      * Executes a step in the dialogue, resolving user prompts and evaluating tool execution plans.
      *
      * @param context session context
@@ -88,7 +134,7 @@ public class AgentEngine {
         nonNullContext.addMessage(userMessage);
 
         final List<ToolInvocation> toolInvocations = new ArrayList<>();
-        final String responseText;
+        String rawResponseText;
 
         // Command dispatch simulation / deterministic parsing
         if (nonNullPrompt.startsWith("/run ")) {
@@ -97,9 +143,9 @@ public class AgentEngine {
             if (toolOpt.isPresent()) {
                 final ToolInvocation inv = toolOpt.get().execute(nonNullContext, Map.of("command", cmd));
                 toolInvocations.add(inv);
-                responseText = "Command executed:\n" + inv.getOutput();
+                rawResponseText = "Command executed:\n" + inv.getOutput();
             } else {
-                responseText = "Error: run_command tool not found in registry.";
+                rawResponseText = "Error: run_command tool not found in registry.";
             }
         } else if (nonNullPrompt.startsWith("/cat ") || nonNullPrompt.startsWith("/read ")) {
             final String path = nonNullPrompt.substring(nonNullPrompt.indexOf(' ') + 1).trim();
@@ -107,12 +153,13 @@ public class AgentEngine {
             if (toolOpt.isPresent()) {
                 final ToolInvocation inv = toolOpt.get().execute(nonNullContext, Map.of("action", "read", "path", path));
                 toolInvocations.add(inv);
-                responseText = "File contents of " + path + ":\n" + inv.getOutput();
+                rawResponseText = "File contents of " + path + ":\n" + inv.getOutput();
             } else {
-                responseText = "Error: file_ops tool not found in registry.";
+                rawResponseText = "Error: file_ops tool not found in registry.";
             }
         } else if (nonNullPrompt.startsWith("/model ") || "/model".equalsIgnoreCase(nonNullPrompt)) {
-            final String subCommand = nonNullPrompt.length() > 6 ? nonNullPrompt.substring(6).trim() : "list";
+            final String subCommand = nonNullPrompt.length() > MODEL_PREFIX_LENGTH
+                    ? nonNullPrompt.substring(MODEL_PREFIX_LENGTH).trim() : "list";
             final String[] parts = subCommand.split("\\s+", 2);
             final String action = parts[0];
             final String query = parts.length > 1 ? parts[1] : "";
@@ -120,25 +167,64 @@ public class AgentEngine {
             if (toolOpt.isPresent()) {
                 final ToolInvocation inv = toolOpt.get().execute(nonNullContext, Map.of("action", action, "query", query));
                 toolInvocations.add(inv);
-                responseText = inv.getOutput();
+                rawResponseText = inv.getOutput();
             } else {
-                responseText = "Error: model_manage tool not found in registry.";
+                rawResponseText = "Error: model_manage tool not found in registry.";
             }
+        } else if (nonNullPrompt.startsWith("/thinking ") || "/thinking".equalsIgnoreCase(nonNullPrompt)) {
+            rawResponseText = handleThinkingCommand(nonNullPrompt);
         } else {
-            responseText = "Omniwrench Agent acknowledged: '" + nonNullPrompt
-                    + "'. Registered tools available: " + toolRegistry.getToolCount()
-                    + " (file_ops, run_command, model_manage). Ready for next autonomous cycle.";
+            if (thinkingEnabled) {
+                rawResponseText = "<think>\nAnalyzing user request: '" + nonNullPrompt + "'\n"
+                        + "Evaluating tool registry (" + toolRegistry.getToolCount() + " tools available)\n"
+                        + "Selected strategy: Deterministic acknowledgment and autonomous reasoning state update (effort="
+                        + thinkingEffort + ")\n</think>\n"
+                        + "Omniwrench Agent acknowledged: '" + nonNullPrompt
+                        + "'. Registered tools available: " + toolRegistry.getToolCount()
+                        + " (file_ops, run_command, model_manage). Ready for next autonomous cycle.";
+            } else {
+                rawResponseText = "Omniwrench Agent acknowledged: '" + nonNullPrompt
+                        + "'. Registered tools available: " + toolRegistry.getToolCount()
+                        + " (file_ops, run_command, model_manage). Ready for next autonomous cycle.";
+            }
         }
 
+        // Demux thoughts from response
+        final StreamDemuxer.DemuxResult demux = StreamDemuxer.parse(rawResponseText);
+        final String thoughtContent = demux.thought();
+        final String cleanContent = demux.answer();
 
         final AgentMessage assistantMessage = new AgentMessage(
                 UUID.randomUUID().toString(),
                 "assistant",
-                responseText,
+                cleanContent,
+                thoughtContent,
                 Instant.now(),
                 toolInvocations
         );
         nonNullContext.addMessage(assistantMessage);
         return assistantMessage;
+    }
+
+    private String handleThinkingCommand(final String prompt) {
+        final String param = prompt.length() > THINKING_PREFIX_LENGTH
+                ? prompt.substring(THINKING_PREFIX_LENGTH).trim().toLowerCase(Locale.ROOT) : "";
+
+        if (param.isEmpty() || "status".equals(param)) {
+            return "Thinking mode is currently " + (thinkingEnabled ? "ENABLED" : "DISABLED")
+                    + " (effort level: " + thinkingEffort + ").";
+        } else if ("on".equals(param) || "true".equals(param) || "enable".equals(param)) {
+            this.thinkingEnabled = true;
+            return "Thinking mode has been ENABLED (effort level: " + thinkingEffort + ").";
+        } else if ("off".equals(param) || "false".equals(param) || "disable".equals(param)) {
+            this.thinkingEnabled = false;
+            return "Thinking mode has been DISABLED.";
+        } else if ("low".equals(param) || "medium".equals(param) || "high".equals(param) || "max".equals(param)) {
+            this.thinkingEnabled = true;
+            this.thinkingEffort = param;
+            return "Thinking mode effort set to '" + param + "' (ENABLED).";
+        } else {
+            return "Unknown thinking command: '" + param + "'. Usage: /thinking [on|off|low|medium|high|max|status]";
+        }
     }
 }

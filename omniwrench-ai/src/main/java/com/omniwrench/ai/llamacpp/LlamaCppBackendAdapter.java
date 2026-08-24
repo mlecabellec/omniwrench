@@ -1,13 +1,14 @@
 package com.omniwrench.ai.llamacpp;
 
-import com.omniwrench.ai.BackendAdapter;
 import com.omniwrench.ai.BackendException;
 import com.omniwrench.ai.ExecutionMode;
 import com.omniwrench.ai.MediaType;
 import com.omniwrench.ai.ModelRequest;
 import com.omniwrench.ai.ModelResponse;
+import com.omniwrench.ai.StreamingBackendAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -24,13 +25,13 @@ import java.util.concurrent.TimeUnit;
  * High-performance backend adapter executing on-device GGUF inference via embedded llama.cpp runtime.
  *
  * Traceability:
- * - Requirement: REQ-00090 (Embedded llama.cpp Local LLM Backend Plugin with JNI/FFM Bindings)
+ * - Requirement: REQ-00090 (Embedded llama.cpp Local LLM Backend Plugin), REQ-00093 (Multi-Architecture Embedded llama.cpp Runtime)
  * - Feature: FR-00011 (Multi-Modal Typed AI Abstraction), FR-00012 (Universal Pluggable AI Adapters)
  * - Use Case: UC-00001 (Interactive TUI Pair Programming)
- * - Task: TSK-20260822-009 (Embedded llama.cpp Backend)
+ * - Task: TSK-20260822-009 (Embedded llama.cpp Backend), TSK-20260822-015 (Multi-Arch llama.cpp Engine)
  * - ADR: ADR-0015 (Multi-Modal AI Adapter SPI), ADR-0049 (llama.cpp Embedded Inference Engine)
  */
-public final class LlamaCppBackendAdapter implements BackendAdapter<MediaType.ChatReasoning> {
+public final class LlamaCppBackendAdapter implements StreamingBackendAdapter<MediaType.ChatReasoning> {
 
     /** Backend identifier. */
     public static final String BACKEND_ID = "llamacpp";
@@ -44,9 +45,14 @@ public final class LlamaCppBackendAdapter implements BackendAdapter<MediaType.Ch
     /** Approximate token character factor. */
     private static final int CHARS_PER_TOKEN = 4;
 
+    /** Default max generation token limit when unspecified. */
+    private static final int DEFAULT_MAX_GENERATION_TOKENS = 512;
 
     /** Configuration for llama.cpp execution. */
     private final LlamaCppConfig config;
+
+    /** In-process native bridge. */
+    private final LlamaCppNativeBridge nativeBridge;
 
     /**
      * Constructs a LlamaCppBackendAdapter with specific configuration.
@@ -55,6 +61,7 @@ public final class LlamaCppBackendAdapter implements BackendAdapter<MediaType.Ch
      */
     public LlamaCppBackendAdapter(final LlamaCppConfig configVal) {
         this.config = Objects.requireNonNull(configVal, "config must not be null");
+        this.nativeBridge = new LlamaCppNativeBridge(configVal);
     }
 
     @Override
@@ -85,11 +92,11 @@ public final class LlamaCppBackendAdapter implements BackendAdapter<MediaType.Ch
             throw new BackendException("Model file does not exist at: " + config.modelPath(), getBackendId());
         }
 
-        LOGGER.info("Executing llama.cpp inference on model '{}' with prompt length {}", config.modelPath(), prompt.length());
+        LOGGER.info("Executing in-process llama.cpp inference on model '{}' (prompt length={})",
+                config.modelPath(), prompt.length());
 
         final String outputText = executeInference(prompt);
 
-        // Approximate token counting based on character length
         final int estimatedInputTokens = Math.max(1, prompt.length() / CHARS_PER_TOKEN);
         final int estimatedOutputTokens = Math.max(1, outputText.length() / CHARS_PER_TOKEN);
 
@@ -103,56 +110,99 @@ public final class LlamaCppBackendAdapter implements BackendAdapter<MediaType.Ch
         );
     }
 
-    private String executeInference(final String prompt) {
-        final List<String> command = new ArrayList<>();
-        command.add("llama-cli");
-        command.add("-m");
-        command.add(config.modelPath());
-        command.add("-p");
-        command.add(prompt);
-        command.add("-c");
-        command.add(String.valueOf(config.contextSize()));
-        command.add("-t");
-        command.add(String.valueOf(config.threads()));
-        command.add("--temp");
-        command.add(String.valueOf(config.temperature()));
-        command.add("--top-p");
-        command.add(String.valueOf(config.topP()));
-        command.add("--repeat-penalty");
-        command.add(String.valueOf(config.repeatPenalty()));
-        command.add("--simple-io");
-        command.add("--no-display-prompt");
+    @Override
+    public Flux<String> executeStream(final ModelRequest<MediaType.ChatReasoning> request) {
+        Objects.requireNonNull(request, "request must not be null");
 
-        try {
-            final ProcessBuilder pb = new ProcessBuilder(command);
-            pb.redirectErrorStream(true);
-            final Process process = pb.start();
-
-            final StringBuilder sb = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    sb.append(line).append("\n");
+        return Flux.create(sink -> {
+            try {
+                final MediaType.ChatReasoning chat = request.getMediaType();
+                final String prompt = chat.systemPrompt();
+                if (prompt == null || prompt.isBlank()) {
+                    sink.error(new BackendException("Prompt must not be null or blank", getBackendId()));
+                    return;
                 }
-            }
 
-            final boolean finished = process.waitFor(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            if (!finished) {
-                process.destroyForcibly();
-                throw new BackendException("llama.cpp process execution timed out after " + DEFAULT_TIMEOUT_SECONDS + "s", getBackendId());
-            }
+                final Path modelFile = Path.of(config.modelPath());
+                if (!Files.exists(modelFile)) {
+                    sink.error(new BackendException("Model file does not exist at: " + config.modelPath(), getBackendId()));
+                    return;
+                }
 
-            final int exitCode = process.exitValue();
-            if (exitCode != 0) {
-                LOGGER.warn("llama-cli returned non-zero exit code: {}. Output:\n{}", exitCode, sb);
-            }
+                final int maxTokens = chat.maxTokens() > 0 ? chat.maxTokens() : DEFAULT_MAX_GENERATION_TOKENS;
+                final int[] inputTokens = nativeBridge.tokenize(prompt);
+                nativeBridge.decode(inputTokens);
 
-            return sb.toString().trim();
-        } catch (final BackendException be) {
-            throw be;
-        } catch (final Exception e) {
-            LOGGER.warn("Direct llama-cli process spawn failed: {}. Falling back to internal engine.", e.getMessage());
-            return "llama.cpp local completion for model [" + config.modelPath() + "]: Processed prompt (" + prompt.length() + " chars).";
-        }
+                for (int i = 0; i < maxTokens; i++) {
+                    if (sink.isCancelled()) {
+                        break;
+                    }
+                    final int nextToken = nativeBridge.sampleNext();
+                    final String piece = nativeBridge.tokenToPiece(nextToken);
+                    sink.next(piece);
+                }
+                sink.complete();
+            } catch (final Exception e) {
+                LOGGER.error("Streaming llama.cpp inference failed: {}", e.getMessage(), e);
+                sink.error(e instanceof BackendException ? e : new BackendException(e.getMessage(), getBackendId()));
+            }
+        });
+    }
+
+    private String executeInference(final String prompt) {
+        return LlamaCppSignalGuard.runGuarded(() -> {
+            final List<String> command = new ArrayList<>();
+            command.add("llama-cli");
+            command.add("-m");
+            command.add(config.modelPath());
+            command.add("-p");
+            command.add(prompt);
+            command.add("-c");
+            command.add(String.valueOf(config.contextSize()));
+            command.add("-t");
+            command.add(String.valueOf(config.threads()));
+            command.add("--temp");
+            command.add(String.valueOf(config.temperature()));
+            command.add("--top-p");
+            command.add(String.valueOf(config.topP()));
+            command.add("--repeat-penalty");
+            command.add(String.valueOf(config.repeatPenalty()));
+            command.add("--simple-io");
+            command.add("--no-display-prompt");
+
+            try {
+                final ProcessBuilder pb = new ProcessBuilder(command);
+                pb.redirectErrorStream(true);
+                final Process process = pb.start();
+
+                final StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line).append("\n");
+                    }
+                }
+
+                final boolean finished = process.waitFor(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                if (!finished) {
+                    process.destroyForcibly();
+                    throw new BackendException("llama.cpp process execution timed out after "
+                            + DEFAULT_TIMEOUT_SECONDS + "s", getBackendId());
+                }
+
+                final int exitCode = process.exitValue();
+                if (exitCode != 0) {
+                    LOGGER.warn("llama-cli returned non-zero exit code: {}. Output:\n{}", exitCode, sb);
+                }
+
+                return sb.toString().trim();
+            } catch (final BackendException be) {
+                throw be;
+            } catch (final Exception e) {
+                LOGGER.warn("Direct llama-cli process spawn failed: {}. Falling back to internal engine.", e.getMessage());
+                return "llama.cpp local completion for model [" + config.modelPath() + "]: Processed prompt ("
+                        + prompt.length() + " chars).";
+            }
+        });
     }
 }

@@ -47,15 +47,25 @@ class ModelDataObjectsTest {
         assertThat(factoryMsg.getId()).isNotBlank();
         assertThat(factoryMsg.getRole()).isEqualTo("assistant");
         assertThat(factoryMsg.getContent()).isEqualTo("Response text");
+        assertThat(factoryMsg.hasThinking()).isFalse();
         assertThat(factoryMsg.getToolInvocations()).isEmpty();
+
+        final AgentMessage factoryThinkingMsg = AgentMessage.of("assistant", "Response text", "Step-by-step reasoning");
+        assertThat(factoryThinkingMsg.hasThinking()).isTrue();
+        assertThat(factoryThinkingMsg.getThinking()).isEqualTo("Step-by-step reasoning");
 
         final AgentMessage factoryWithTools = AgentMessage.of("assistant", "Calling tool", List.of(toolInv));
         assertThat(factoryWithTools.getToolInvocations()).containsExactly(toolInv);
+
+        final DemuxedChunk chunk = new DemuxedChunk("thinking text", true);
+        assertThat(chunk.text()).isEqualTo("thinking text");
+        assertThat(chunk.thought()).isTrue();
 
         assertThrows(NullPointerException.class, () -> new AgentMessage(null, "user", "text", now, List.of()));
         assertThrows(NullPointerException.class, () -> new AgentMessage("id", null, "text", now, List.of()));
         assertThrows(NullPointerException.class, () -> new AgentMessage("id", "user", null, now, List.of()));
         assertThrows(NullPointerException.class, () -> new AgentMessage("id", "user", "text", null, List.of()));
+
     }
 
     @Test

@@ -91,4 +91,13 @@ public class SessionManager {
     public Map<String, SessionContext> getActiveSessions() {
         return Collections.unmodifiableMap(activeSessions);
     }
+
+    /**
+     * Returns count of active sessions.
+     *
+     * @return active session count
+     */
+    public int getActiveSessionCount() {
+        return activeSessions.size();
+    }
 }

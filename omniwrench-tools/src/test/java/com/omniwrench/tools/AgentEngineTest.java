@@ -18,20 +18,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Unit tests verifying the AgentEngine reasoning cycle and prompt execution.
+ * Unit tests verifying the AgentEngine reasoning cycle, thinking demuxing, and prompt execution.
  *
  * Traceability:
- * - Requirement: REQ-00043 (Hybrid Reasoning Loop), REQ-00060 (Polyvalent Base Architecture with Pluggable Tools)
+ * - Requirement: REQ-00043 (Hybrid Reasoning Loop), REQ-00060 (Pluggable Tools), REQ-00088 (Dual Chat Mode Reasoning)
  * - Feature: FR-00014 (Hybrid Reasoning Loop)
  * - Use Case: UC-00001 (Interactive TUI Pair Programming), UC-00002 (Autonomous Goal Planning)
- * - Task: TSK-20260822-005 (Pluggable Tool Registry & Agent Execution Loop)
- * - ADR: ADR-0008 (Autonomous Reasoning Loop)
+ * - Task: TSK-20260822-005 (Pluggable Tool Registry), TSK-20260822-007 (Dual Chat Mode & Thinking Demux)
+ * - ADR: ADR-0008 (Autonomous Reasoning Loop), ADR-0047 (Reasoning Demux)
  */
 @Tag("REQ-00043")
 @Tag("REQ-00060")
+@Tag("REQ-00088")
 @Tag("FR-00014")
 @Tag("UC-00001")
 @Tag("TSK-20260822-005")
+@Tag("TSK-20260822-007")
 class AgentEngineTest {
 
     @TempDir
@@ -51,7 +53,7 @@ class AgentEngineTest {
     }
 
     @Test
-    @DisplayName("Should process standard user prompt and generate assistant reply")
+    @DisplayName("Should process standard user prompt and demux thinking when enabled")
     void shouldProcessStandardPrompt() {
         final SessionContext session = SessionContext.createDefault(tempDir.toString());
         final AgentMessage response = agentEngine.processPrompt(session, "Hello Omniwrench");
@@ -59,7 +61,30 @@ class AgentEngineTest {
         assertThat(response).isNotNull();
         assertThat(response.getRole()).isEqualTo("assistant");
         assertThat(response.getContent()).contains("Omniwrench Agent acknowledged");
+        assertThat(response.hasThinking()).isTrue();
+        assertThat(response.getThinking()).contains("Analyzing user request");
         assertThat(session.getMessages()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("Should configure thinking mode and effort level via /thinking commands")
+    void shouldConfigureThinkingMode() {
+        final SessionContext session = SessionContext.createDefault(tempDir.toString());
+
+        final AgentMessage statusMsg = agentEngine.processPrompt(session, "/thinking status");
+        assertThat(statusMsg.getContent()).contains("Thinking mode is currently ENABLED");
+
+        final AgentMessage offMsg = agentEngine.processPrompt(session, "/thinking off");
+        assertThat(offMsg.getContent()).contains("DISABLED");
+        assertThat(agentEngine.isThinkingEnabled()).isFalse();
+
+        final AgentMessage promptWithoutThinking = agentEngine.processPrompt(session, "Prompt without thinking");
+        assertThat(promptWithoutThinking.hasThinking()).isFalse();
+
+        final AgentMessage highMsg = agentEngine.processPrompt(session, "/thinking high");
+        assertThat(highMsg.getContent()).contains("high");
+        assertThat(agentEngine.getThinkingEffort()).isEqualTo("high");
+        assertThat(agentEngine.isThinkingEnabled()).isTrue();
     }
 
     @Test
