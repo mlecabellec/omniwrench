@@ -76,15 +76,15 @@ This register details all formal system requirements for Omniwrench with full tr
 
 | ID | Title | Traceability | Priority | Verification Method | Status |
 |---|---|---|---|---|---|
-| [`REQ-00088`](REQ-00088.md) | Dual Chat Mode with Explicit Reasoning & Thinking Demux | ADR-0047 | Critical | Thinking Stream Extraction Test | Specified |
-| [`REQ-00089`](REQ-00089.md) | Unified Tri-Interface Prompting (CLI, TUI, Web UI) | ADR-0048 | Critical | CLI / TUI / Web E2E Test | Specified |
+| [`REQ-00088`](REQ-00088.md) | Dual Chat Mode with Explicit Reasoning & Thinking Demux | ADR-0047 | Critical | Thinking Stream Extraction Test | Implemented |
+| [`REQ-00089`](REQ-00089.md) | Unified Tri-Interface Prompting (CLI, TUI, Web UI) | ADR-0048 | Critical | CLI / TUI / Web E2E Test | Implemented |
 | [`REQ-00090`](REQ-00090.md) | Embedded llama.cpp Local LLM Backend Plugin | ADR-0049 | Critical | llama.cpp In-Memory Inference Test | Implemented |
 | [`REQ-00091`](REQ-00091.md) | Multi-Source Model Hub Manager (Ollama & HuggingFace) | ADR-0050 | High | Ollama / HF Download & Gemma Test | Implemented |
 | [`REQ-00092`](REQ-00092.md) | True Implementation Quality Mandate (Zero-Mock Guarantee) | CS-0055 | Critical | Bytecode & Runtime No-Mock Static Audit | Implemented |
 | [`REQ-00093`](REQ-00093.md) | Multi-Architecture Embedded llama.cpp & GGML Native Runtime | ADR-0049 | Critical | Architecture Detection & Native Loader Test | Implemented |
 
-| [`REQ-00094`](REQ-00094.md) | Asynchronous Background Tool Execution & Callbacks | ADR-0052 | High | Virtual Thread Background Tool Test | Specified |
-| [`REQ-00095`](REQ-00095.md) | Ultra-Precise OpenAPI & JSON Schema Function Descriptions | ADR-0053 | Critical | OpenAPI 3.1 Schema & Validation Test | Specified |
+| [`REQ-00094`](REQ-00094.md) | Asynchronous Background Tool Execution & Callbacks | ADR-0052 | High | Virtual Thread Background Tool Test | Implemented |
+| [`REQ-00095`](REQ-00095.md) | Ultra-Precise OpenAPI & JSON Schema Function Descriptions | ADR-0053 | Critical | OpenAPI 3.1 Schema & Validation Test | Implemented |
 | [`REQ-00096`](REQ-00096.md) | AES-256-GCM Encrypted Secret Vault & OS Keyring | ADR-0054 | Critical | Automated Vault Encryption, Keyring & Fallback Test | Specified |
 | [`REQ-00097`](REQ-00097.md) | ZeroMQ Transport Mesh with BSON Serialization | ADR-0055 | Critical | ZeroMQ Sockets & BSON Serialization Test | Specified |
 | [`REQ-00098`](REQ-00098.md) | Asynchronous Java NIO WatchService & Debounced File Watcher | ADR-0056 | High | Automated File Watcher Event Aggregation & Debounce Test | Specified |

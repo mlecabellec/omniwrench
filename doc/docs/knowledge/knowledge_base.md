@@ -538,6 +538,65 @@ This document stores persistent project knowledge, architectural decisions, and 
     * **Workspace File Path Provider**: Fuzzy-searches workspace repository files via cached symbol graph.
     * **Model & Swarm Provider**: Autocompletes configured model tiers (`TRIVIAL`..`EXPERT`) and subagent roles.
 
+### ADR-0047: Dual Chat Mode and Explicit Reasoning Stream Demultiplexing
+- **Status**: Accepted (2026-08-23)
+- **Context**: Advanced reasoning models (e.g. DeepSeek-R1, Qwen-2.5-Coder, Claude 3.7 Sonnet) emit explicit reasoning thoughts encapsulated in `<think>...</think>` tags or specialized token channels alongside regular conversational answers. The workbench must demultiplex thinking thoughts from final responses across all UI channels.
+- **Decision**: Implemented `StreamDemuxer` state machine and `DemuxedChunk` in `omniwrench-core`:
+  - Parses streaming and static `<think>` blocks in real time.
+  - Generates distinct `thought.delta` and `chat.delta` reactive event streams.
+  - Visualizes thoughts inside collapsible neon reasoning boxes in the Cyberpunk TUI and expandable cards in the Web UI.
+  - Supports `/thinking [on|off|low|medium|high|max|status]` to configure reasoning effort.
+
+### ADR-0048: Unified Tri-Interface Ingestion (CLI, TUI, and Web UI Parity)
+- **Status**: Accepted (2026-08-23)
+- **Context**: Omniwrench must support single-turn headless scripts in CI/CD, interactive full-terminal pairing in the TUI, and graphical browser access over REST/WebSockets with identical session context state and tool permissions.
+- **Decision**: Unified prompt execution inside `AgentEngine` with tri-interface ingestion:
+  - **Headless CLI Prompting**: `-p` / `--prompt` single-shot execution, `--json` structured envelope output, and `-` standard input piping via `TuiRunner`.
+  - **Interactive TUI**: Line-oriented / full-screen JLine/Lanterna Cyberpunk dashboard via `OmniwrenchTuiDashboard`.
+  - **Web REST & WebSocket**: `/sessions/{id}/prompt` endpoint and `/ws/agent-stream` real-time socket handler.
+  - End-to-end parity verified by `TriInterfacePromptE2ETest`.
+
+### ADR-0049: Embedded In-Process llama.cpp Native Runtime Integration
+- **Status**: Accepted (2026-08-23)
+- **Context**: Running local GGUF models directly within the Omniwrench process avoids external server dependencies (e.g. separate vLLM or Ollama daemons) and enables sub-millisecond in-process token generation.
+- **Decision**: Created `LlamaCppBackendAdapter`, `LlamaCppNativeBridge`, and `LlamaCppSignalGuard` in `omniwrench-ai`:
+  - Leverages Java Foreign Function & Memory (FFM) API for in-process C/C++ bindings.
+  - Wraps all native calls in `LlamaCppSignalGuard` to catch segmentation faults, arithmetic traps, and memory errors, translating them to structured `BackendException`.
+  - Emits reactive Project Reactor `Flux<String>` streaming tokens.
+
+### ADR-0050: Multi-Source Model Hub & Repository Manager
+- **Status**: Accepted (2026-08-23)
+- **Context**: Developers need effortless discovery, downloading, verification, and local management of quantized GGUF weights without manual browser downloads.
+- **Decision**: Implemented `ModelRepositoryClient` and `ModelManager` in `omniwrench-ai` paired with `ModelManagementTool` in `omniwrench-tools`:
+  - **Ollama Hub Search & OCI Registry**: Live web search (`ollama.com/search`) and direct OCI Distribution manifest resolution (`registry.ollama.ai`) for SHA-256 digests and blob URLs.
+  - **HuggingFace Hub Tree Resolution**: Automated main tree inspection and optimal GGUF quantization asset selection (`Q4_K_M`, `Q4_0`, `Q5_K_M`, etc.) with `HF_TOKEN` authorization header support.
+  - **CLI / TUI Slash Commands**: `/model search <query>`, `/model pull <id:tag>`, `/model list`, and `/model rm <id>`.
+  - **Integrity Guarantee**: Mandatory SHA-256 checksum validation and local catalog management under `~/.omniwrench/models/catalog.json`.
+
+### ADR-0051: Multi-Architecture Host OS, CPU & GPU Auto-Detection
+- **Status**: Accepted (2026-08-23)
+- **Context**: Embedded native libraries must seamlessly run across Linux (x86_64, aarch64), macOS (Apple Silicon ARM64, Intel x86_64), and Windows with automatic GPU hardware compute discovery (CUDA, ROCm, Vulkan, Metal, CPU).
+- **Decision**: Implemented `NativeLibraryLoader` in `omniwrench-ai`:
+  - Automatically identifies host operating system, architecture, and compute capabilities.
+  - Dynamically extracts and unpacks matching native shared libraries (`.so`, `.dylib`, `.dll`) from reactor JAR resources.
+  - Gracefully falls back to optimized CPU AVX-512 / NEON vector acceleration when discrete GPU backends are unavailable.
+
+### ADR-0052: Asynchronous Background Tool Execution with Reactive Callbacks
+- **Status**: Accepted (2026-08-23)
+- **Context**: Long-running tool operations (e.g. workspace tree walks, multi-file regex grep, multi-gigabyte model downloads, test suite compilation) must not freeze the interactive TUI or block agent reasoning turns.
+- **Decision**: Enhanced the `Tool` SPI in `omniwrench-core` and created `AdvancedFileOperationsTool` in `omniwrench-tools`:
+  - Added `executeAsync()` and reactive `Consumer<Double>` progress callbacks.
+  - Spawns background tasks on lightweight Java Virtual Threads (`Executors.newVirtualThreadPerTaskExecutor()`).
+  - Delivers real-time progress telemetry to `TerminalRenderer` and WebSocket clients.
+
+### ADR-0053: Ultra-Precise OpenAPI 3.1 & JSON Schema Function Calling Registry
+- **Status**: Accepted (2026-08-23)
+- **Context**: Language models (Claude, GPT-4o, Gemini, DeepSeek) require unambiguous, strictly typed tool parameter schemas to execute structured tool calling without parameter hallucinations.
+- **Decision**: Implemented `OpenApiToolSchemaGenerator` in `omniwrench-core`:
+  - Dynamically inspects `ToolDefinition` metadata and produces standardized OpenAPI 3.1 / JSON Schema descriptors.
+  - Generates provider-specific function calling declarations for OpenAI, Gemini, and Anthropic tool calling formats.
+  - Automatically suppresses internal runtime injection parameters (e.g. `SessionContext`, `authToken`) from external LLM visibility.
+
 ### ADR-0054: AES-256-GCM Encrypted Secret Vault and OS Keyring Integration
 - **Status**: Accepted (2026-08-22)
 - **Context**: Omniwrench requires access to various sensitive credentials (OpenAI, Anthropic, Gemini, DeepSeek, GitHub/Gitea tokens, Home Assistant access tokens). Storing plain API keys in source control or cleartext files is a critical security vulnerability.

@@ -47,3 +47,32 @@ source ./activate-env.sh
 ./omniwrench-helper.sh build-native
 ```
 
+---
+
+## ⚡ Quick Start: Running Omniwrench
+
+### 1. Interactive Cyberpunk TUI
+Launch the interactive dual terminal workbench:
+```bash
+./omniwrench-app/target/omniwrench tui
+```
+
+### 2. Single-Shot Non-Interactive Prompt
+Execute direct prompts without entering interactive mode:
+```bash
+./omniwrench-app/target/omniwrench -p "hello"
+```
+
+### 3. Local Model Provisioning & Management
+Search and pull local GGUF weights directly from Ollama or HuggingFace:
+```bash
+# Search for available models
+./omniwrench-app/target/omniwrench -p "/model search gemma"
+
+# Pull model weights from Ollama library
+./omniwrench-app/target/omniwrench -p "/model pull gemma4:e2b"
+
+# List locally cached models
+./omniwrench-app/target/omniwrench -p "/model list"
+```
+

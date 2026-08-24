@@ -16,7 +16,7 @@ Omniwrench provides multiple Maven build profiles and helper commands tailored f
 
 ### Quick Helper Script Commands
 
-The repository provides [`omniwrench-helper.sh`](file:///home/m/git/omniwrench/omniwrench-helper.sh) for simplified lifecycle orchestration:
+The repository provides [`omniwrench-helper.sh`](file:///home/vortigern/git/omniwrench/omniwrench-helper.sh) for simplified lifecycle orchestration:
 
 ```bash
 # 1. Automatically download, verify SHA-256, and configure latest GraalVM SDK

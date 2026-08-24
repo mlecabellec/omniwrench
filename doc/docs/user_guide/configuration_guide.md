@@ -18,7 +18,12 @@ export PORT=9090
 export OMNIWRENCH_MODE=tui
 
 # Target specific workspace directory
-export OMNIWRENCH_WORKSPACE=/home/m/git/omniwrench
+export OMNIWRENCH_WORKSPACE=/home/vortigern/git/omniwrench
+
+# Optional HuggingFace Token for gated model downloads
+export HF_TOKEN="hf_xxxxxxxxxxxxxxxxxxxx"
+# Or alternatively:
+export HUGGING_FACE_HUB_TOKEN="hf_xxxxxxxxxxxxxxxxxxxx"
 ```
 
 ## GraalVM Auto-Detection & Environment Setup Helper
