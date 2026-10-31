@@ -83,6 +83,10 @@ class ModelDataObjectsTest {
         assertThat(session.toString()).contains("sessionId='").contains("workspaceRoot='/tmp/workspace'");
         assertThat(session).isEqualTo(session);
         assertThat(session.hashCode()).isEqualTo(session.hashCode());
+        assertThat(session.equals("not a session")).isFalse();
+
+        session.clearMessages();
+        assertThat(session.getMessages()).isEmpty();
 
         assertThrows(NullPointerException.class, () -> session.addMessage(null));
         assertThrows(NullPointerException.class, () -> new SessionContext(null, "/tmp"));

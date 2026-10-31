@@ -32,6 +32,7 @@ nav:
       - Quick Start & Overview: user_guide/overview.md
       - Modern Cyberpunk TUI Guide: user_guide/tui_guide.md
       - Web & Telemetry Dashboard: user_guide/web_guide.md
+      - Resuming Operations Guide: user_guide/resuming_operations.md
       - Configuration & Environment: user_guide/configuration_guide.md
       - Workflows & Operations: user_guide/workflows.md
   - Architecture:

@@ -1,13 +1,13 @@
 # Modern Cyberpunk TUI Guide
 
-The Omniwrench interactive terminal dashboard provides an ultra-responsive, glowing HUD interface.
+The Omniwrench interactive terminal dashboard provides an ultra-responsive, glowing Cyberpunk HUD interface deeply inspired by **OpenCode** and **OpenClaw**. It automatically detects and adapts to **Standard Local Terminals**, **Remote SSH Sessions**, and **Tmux Multiplexer Panes**.
 
-```
+```text
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║  🛠️  O M N I W R E N C H  ::  AUTONOMOUS DUAL AGENT WORKBENCH               ║
 ║  Inspired by OpenCode & OpenClaw | Java 17+ Spring Boot                     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
- [MODE: DUAL] [SESSIONS: 1] [TOOLS: 2 READY] [WEB PORT: 8080] [JVM: 21]
+ [LOCAL]  [MODE: DUAL] [SESSIONS: 1] [TOOLS: 4 READY] [WEB PORT: 8080] [JVM: 21]
 
 omniwrench> /run ls -la
 ┌── [USER]
@@ -23,11 +23,39 @@ omniwrench> /run ls -la
 └──
 ```
 
+---
+
+## Terminal Modes & Environment Detection
+
+Omniwrench automatically inspects environment variables (`TMUX`, `TMUX_PANE`, `SSH_CLIENT`, `SSH_CONNECTION`, `SSH_TTY`, `TERM`, `COLUMNS`, `LINES`) to optimize rendering:
+
+| Mode | Environment Condition | Visual Indicator | Special Capabilities |
+|---|---|---|---|
+| **`STANDARD`** | Direct desktop console (Alacritty, Kitty, WezTerm, iTerm2, GNOME Terminal) | `[LOCAL]` | Standard OSC window titles, full TrueColor ANSI palette. |
+| **`SSH`** | Remote shell (`SSH_CLIENT` or `SSH_CONNECTION` detected) | `[SSH: <ip:port>]` | OSC 52 clipboard writes tunneled directly to local client clipboard. |
+| **`TMUX`** | Multiplexer session (`TMUX` or `TMUX_PANE` active, or `TERM=tmux*`) | `[TMUX: %<pane>]` | Tmux DCS passthrough (`\033Ptmux;...\033\\`), tmux window renaming (`\033k...`), automatic narrow column adaptation. |
+
+### Responsive Narrow Viewport Adaptation
+In tmux vertical splits or constrained terminal windows where width is `< 80` columns, Omniwrench automatically collapses the large ASCII box banner into a compact single-line Cyberpunk header:
+```text
+⚡ OMNIWRENCH :: DUAL AGENT WORKBENCH ⚡
+```
+
+### OSC 52 Remote Clipboard Tunneling (`/copy`)
+When connected over SSH or through tmux multiplexers, copying text usually requires X11 forwarding or local clip tools. Omniwrench generates native **OSC 52 escape sequences** (with tmux DCS passthrough wrapping when in tmux), allowing you to copy the last assistant response directly to your physical machine's clipboard.
+
+---
+
 ## Built-in Slash Commands
 
 | Command | Syntax / Options | Description |
 |---|---|---|
 | `/help` | `/help` | Displays command assistance and summary table. |
+| `/btw` | `/btw <question>` | **Side-Channel Prompt**: Asks an ephemeral question without polluting the primary task conversation or reasoning thread. |
+| `/goal` | `/goal [objective]` | **Goal Tracker**: Displays or updates the high-level session objective card. |
+| `/env` | `/env` | **Diagnostics**: Displays operating system, architecture, terminal mode, dimensions, and JVM runtime details. |
+| `/copy` | `/copy` | **Clipboard**: Copies the last assistant response to your clipboard using OSC 52 tunneling. |
+| `/clear` | `/clear` | Clears the terminal screen (`\033[2J\033[H`). |
 | `/run` | `/run <command>` | Executes a shell command inside the workspace via `CommandExecutionTool`. |
 | `/cat` | `/cat <filepath>` | Reads and displays file contents via `FileOperationsTool` (alias: `/read`). |
 | `/thinking` | `/thinking [on\|off\|low\|medium\|high\|max\|status]` | Toggles or configures internal reasoning stream effort level. |
@@ -78,7 +106,7 @@ Successfully removed model: gemma4:e2b
 
 ## Reasoning & Thinking Stream Control (`/thinking`)
 
-Omniwrench demultiplexes reasoning thoughts `<think>...</think>` from the final answer stream in real time.
+Omniwrench demultiplexes reasoning thoughts `<think>...</think>` from the final answer stream in real time:
 
 ```text
 omniwrench> /thinking status

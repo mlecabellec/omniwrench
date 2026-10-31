@@ -9,13 +9,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Unit tests verifying Cyberpunk ANSI widget rendering, status bars, message bubbles, and thinking boxes.
+ * Unit tests verifying Cyberpunk ANSI widget rendering, status bars, message bubbles,
+ * thinking boxes, and OpenCode-inspired side-channel cards.
  *
  * Traceability:
- * - Requirement: REQ-00001 (Dual Headless CLI & Interactive TUI Presentation Engine), REQ-00043 (Hybrid Reasoning Loop), REQ-00088 (Dual Chat Mode Reasoning)
- * - Feature: FR-00001 (Dual Headless & Interactive Presentation Engine)
+ * - Requirement: REQ-00001 (Dual Headless CLI &amp; Interactive TUI Presentation Engine), REQ-00043 (Hybrid Reasoning Loop), REQ-00088 (Dual Chat Mode Reasoning)
+ * - Feature: FR-00001 (Dual Headless &amp; Interactive Presentation Engine)
  * - Use Case: UC-00001 (Interactive TUI Pair Programming)
- * - Task: TSK-20260822-003 (Modern Cyberpunk TUI Design), TSK-20260822-007 (Dual Chat Mode & Thinking Demux)
+ * - Task: TSK-20260822-003 (Modern Cyberpunk TUI Design), TSK-20260822-007 (Dual Chat Mode &amp; Thinking Demux)
  * - ADR: ADR-0001 (Unified Dual Architecture), ADR-0047 (Reasoning Demux)
  */
 @Tag("REQ-00001")
@@ -41,6 +42,18 @@ class TerminalRendererTest {
     }
 
     @Test
+    @DisplayName("Should render compact banner when viewport is narrow")
+    void shouldRenderCompactBannerWhenNarrow() {
+        final TerminalEnvironment narrowEnv = new TerminalEnvironment(TerminalMode.STANDARD, "xterm", "", "", 60, 20);
+        final String banner = renderer.renderBanner(narrowEnv);
+        assertThat(banner).contains("OMNIWRENCH :: DUAL AGENT WORKBENCH").doesNotContain("╔════");
+
+        final TerminalEnvironment wideEnv = new TerminalEnvironment(TerminalMode.STANDARD, "xterm", "", "", 120, 40);
+        final String wideBanner = renderer.renderBanner(wideEnv);
+        assertThat(wideBanner).contains("╔════");
+    }
+
+    @Test
     @DisplayName("Should render status bar with active session count, tools count, and port")
     void shouldRenderStatusBar() {
         final String statusBar = renderer.renderStatusBar("dual", 2, 5, 8080);
@@ -53,6 +66,22 @@ class TerminalRendererTest {
                 .contains("5 READY")
                 .contains("WEB PORT:")
                 .contains("8080");
+    }
+
+    @Test
+    @DisplayName("Should render status bar with environment pills for TMUX, SSH, and LOCAL")
+    void shouldRenderEnvironmentStatusBar() {
+        final TerminalEnvironment tmuxEnv = new TerminalEnvironment(TerminalMode.TMUX, "tmux", "", "%5", 100, 30);
+        final String tmuxStatus = renderer.renderStatusBar("dual", 1, 4, 8080, tmuxEnv);
+        assertThat(tmuxStatus).contains("[TMUX:%5]").contains("MODE:").contains("DUAL");
+
+        final TerminalEnvironment sshEnv = new TerminalEnvironment(TerminalMode.SSH, "xterm", "10.0.0.1:22", "", 100, 30);
+        final String sshStatus = renderer.renderStatusBar("headless", 1, 4, 8080, sshEnv);
+        assertThat(sshStatus).contains("[SSH:10.0.0.1:22]").contains("MODE:").contains("HEADLESS");
+
+        final TerminalEnvironment localEnv = new TerminalEnvironment(TerminalMode.STANDARD, "kitty", "", "", 100, 30);
+        final String localStatus = renderer.renderStatusBar("tui", 1, 4, 8080, localEnv);
+        assertThat(localStatus).contains("[LOCAL]").contains("MODE:").contains("TUI");
     }
 
     @Test
@@ -83,11 +112,57 @@ class TerminalRendererTest {
     }
 
     @Test
+    @DisplayName("Should render OpenCode-inspired side-channel Q&A box")
+    void shouldRenderBtwBox() {
+        final String btwBox = renderer.renderBtwBox("What is this file?", "It is the main entry point.");
+        assertThat(btwBox)
+                .contains("BY THE WAY / SIDE-CHANNEL: What is this file?")
+                .contains("It is the main entry point.");
+    }
+
+    @Test
+    @DisplayName("Should render OpenCode-inspired goal card")
+    void shouldRenderGoalCard() {
+        final String goalCard = renderer.renderGoalCard("Refactor authentication module");
+        assertThat(goalCard)
+                .contains("ACTIVE SESSION GOAL")
+                .contains("Refactor authentication module");
+    }
+
+    @Test
+    @DisplayName("Should render environment diagnostic card")
+    void shouldRenderEnvironmentCard() {
+        final TerminalEnvironment env = new TerminalEnvironment(
+                TerminalMode.TMUX, "tmux-256color", "", "%1", 80, 24
+        );
+        final String envCard = renderer.renderEnvironmentCard(env);
+        assertThat(envCard)
+                .contains("TERMINAL & RUNTIME ENVIRONMENT")
+                .contains("TMUX")
+                .contains("Tmux Pane:")
+                .contains("%1");
+    }
+
+    @Test
+    @DisplayName("Should render copy feedback badge")
+    void shouldRenderCopyFeedback() {
+        final String copyBadge = renderer.renderCopyFeedback(128);
+        assertThat(copyBadge).contains("COPIED 128 BYTES TO CLIPBOARD VIA OSC 52");
+    }
+
+    @Test
     @DisplayName("Should reject null arguments during rendering")
     void shouldRejectNullArguments() {
         assertThrows(NullPointerException.class, () -> renderer.renderPromptBox(null));
         assertThrows(NullPointerException.class, () -> renderer.renderThinkingBox(null));
         assertThrows(NullPointerException.class, () -> renderer.renderMessageBubble(null, "content"));
         assertThrows(NullPointerException.class, () -> renderer.renderMessageBubble("user", null));
+        assertThrows(NullPointerException.class, () -> renderer.renderBanner(null));
+        assertThrows(NullPointerException.class, () -> renderer.renderStatusBar(null, 1, 1, 8080));
+        assertThrows(NullPointerException.class, () -> renderer.renderStatusBar("mode", 1, 1, 8080, null));
+        assertThrows(NullPointerException.class, () -> renderer.renderBtwBox(null, "answer"));
+        assertThrows(NullPointerException.class, () -> renderer.renderBtwBox("q", null));
+        assertThrows(NullPointerException.class, () -> renderer.renderGoalCard(null));
+        assertThrows(NullPointerException.class, () -> renderer.renderEnvironmentCard(null));
     }
 }

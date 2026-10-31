@@ -23,15 +23,15 @@ import java.util.regex.Pattern;
  */
 public final class StreamDemuxer {
 
-    /** Regex pattern matching &lt;think&gt;...&lt;/think&gt; or [THOUGHT]...[/THOUGHT] tags across lines. */
-    private static final Pattern THINK_TAG_PATTERN = Pattern.compile(
-            "(?s)(<think>|\\[THOUGHT\\]|<reasoning>)(.*?)(</think>|\\[/THOUGHT\\]|</reasoning>|$)"
-    );
-
     /** Thinking start tag. */
     public static final String TAG_THINK_OPEN = "<think>";
     /** Thinking end tag. */
     public static final String TAG_THINK_CLOSE = "</think>";
+
+    /** Regex pattern matching &lt;think&gt;...&lt;/think&gt; or [THOUGHT]...[/THOUGHT] tags across lines. */
+    private static final Pattern THINK_TAG_PATTERN = Pattern.compile(
+            "(?s)(<think>|\\[THOUGHT\\]|<reasoning>)(.*?)(</think>|\\[/THOUGHT\\]|</reasoning>|$)"
+    );
 
     /**
      * Immutable result holding separated thought content and final answer text.
@@ -173,6 +173,10 @@ public final class StreamDemuxer {
 
     /**
      * Returns true if the test string ends with a prefix of the target tag.
+     *
+     * @param text string to inspect
+     * @param tag target tag
+     * @return true if text ends with a prefix of tag
      */
     private boolean isPrefixOf(final String text, final String tag) {
         for (int i = 1; i < tag.length(); i++) {

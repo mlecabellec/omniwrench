@@ -60,6 +60,13 @@ public final class SessionContext {
     }
 
     /**
+     * Clears all recorded conversation messages in this session.
+     */
+    public synchronized void clearMessages() {
+        this.messages.clear();
+    }
+
+    /**
      * Returns an unmodifiable snapshot of messages recorded in this session.
      *
      * @return list of agent messages

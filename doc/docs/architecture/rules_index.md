@@ -32,18 +32,21 @@ CS40 --> CS30 : Named Constants
 1. [Constraint CS-0010: Project Quality Standards](CS-0010.md)
    - Mandatory unique structured references (`REQ-XXXXX`, `FR-XXXXX`, `TSK-XXXXX`, `BUG-XXXXX`, `FIX-XXXXX`).
    - Granular code traceability down to methods, fields, and logical blocks.
+   - Sizing and readability limits: <= 200 lines/method, <= 1,600 lines/class, max 5 lines unannotated code block.
 
 2. [Constraint CS-0020: AI Agent Rules and Standards](CS-0020.md)
    - Agent self-evaluation, impact analysis, natural language explanations.
-   - Step-by-step workflow for new features and bug fixes.
+   - Step-by-step workflow for new features and deep hypothesis-chained bug fixes.
+   - Multi-tier testing mandate: Functional, worst-case, and concurrency stress tests.
    - Mandatory human validation for architectural modifications and commits.
 
 3. [Constraint CS-0030: Java Programming Language Standards](CS-0030.md)
    - Defensive precondition checks (`Objects.requireNonNull`, range validation).
    - Zero null-passing / returning across boundaries.
-   - Bounded object pools, bounded thread pools.
+   - Bounded object pools, bounded thread pools with explicit `RejectedExecutionHandler`.
    - Strict explicit typing (strict exclusion of `var`).
    - Mandatory `try-with-resources`.
+   - Boundary entry points tagged with `@exposed`.
 
 4. [Constraint CS-0040: Prohibition of Literal Magic Numbers](CS-0040.md)
    - All limits, timeouts, and configuration values represented as named symbolic constants (`UPPER_SNAKE_CASE`).
@@ -51,6 +54,7 @@ CS40 --> CS30 : Named Constants
 
 5. [Constraint CS-0050: Verifiable Integrity and Safety Standards](CS-0050.md)
    - Bounded stack depth, memory safety profiles, and explicit bounds checking.
+   - Hard iteration limits on all loops and recursions.
 
 6. [Constraint CS-0055: Zero-Mock Production Mandate & Runtime Realism](CS-0055.md)
    - Zero mock frameworks or dummy returns in production code paths (`src/main`).
@@ -64,3 +68,5 @@ CS40 --> CS30 : Named Constants
 8. [Constraint CS-0070: Agent Operational Standards and Submission Protocols](CS-0070.md)
    - Mandatory human clearance before `git commit` or `git push`.
    - Local build pass, full test pass, and deletion analysis before submission requests.
+   - Caller/callee impact analysis and strict ban on unjustified test modifications.
+   - Standardized submission template and two-phase review protocol.

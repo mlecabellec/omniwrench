@@ -643,3 +643,22 @@ This document stores persistent project knowledge, architectural decisions, and 
   - **Live Theme Switch**: `F6` key opens a floating theme-picker popup with XTerm-256 palette preview swatches.
   - **Semantic Color Tokens**: Each theme maps semantic tokens (`primary`, `secondary`, `error`, `warning`, `border`, `selection`, `ghost`) to XTerm-256 color indices for consistent Lanterna attribute application.
   - **Hot-Reload**: Theme JSON files are watched by the file watcher (`ADR-0056`) and applied live without restart.
+
+### ADR-0058: Multi-Mode Terminal UX Adaptation (Standard, SSH, TMUX) & OSC 52 Tunneling
+- **Status**: Accepted (2026-10-31)
+- **Context**: Omniwrench operators frequently work across heterogeneous terminal environments: local desktop emulators, remote SSH shells, and nested tmux multiplexer panes. Terminal escape sequences (window titles, OSC 52 clipboards) and banners must adapt dynamically to avoid corruption or visual wrapping.
+- **Decision**: Implemented `TerminalMode`, `TerminalEnvironment`, and `TerminalEnvironmentDetector` in `omniwrench-tui`:
+  - **Automatic Environment Classification**: Detects `STANDARD` (local console), `SSH` (remote connection), and `TMUX` (multiplexer).
+  - **Tmux DCS Passthrough**: Frames OSC 52 clipboard sequences and OSC 0 window titles with `\033Ptmux;\033...\007\033\\` and doubled inner escape bytes, guaranteeing sequences pass through tmux to client emulators.
+  - **Responsive Narrow Viewport Folding**: Dynamically switches from wide ASCII art boxes to single-line compact headers when column width is `< 80`.
+  - **OpenCode Terminal Commands**: Added `/btw` (ephemeral prompt), `/goal` (session objective card), `/env` (runtime diagnostics), `/copy` (OSC 52 clipboard write), and `/clear` (terminal reset).
+
+### ADR-0059: OpenCode-Inspired Single-Page Web HUD & WebSocket Streaming Architecture
+- **Status**: Accepted (2026-10-31)
+- **Context**: The browser-based interface needed an overhaul to match the ergonomics, aesthetics, and reactivity of OpenCode (`tmp/opencode`), providing seamless multi-session management, thinking accordions, and real-time streaming.
+- **Decision**: Implemented embedded Single-Page Application (SPA) Web HUD in `omniwrench-web`:
+  - **Static Asset Bundle**: Embedded `index.html`, `css/app.css`, and `js/app.js` using OpenCode dark palette tokens (`#101010` base, `#161616` elevated surfaces, `#242424` borders) and Cyberpunk neon accents (cyan, magenta, amber, green).
+  - **Multi-Session Lifecycle**: Dynamic session switching and provisioning via REST endpoints (`GET/POST /api/v1/sessions`, `DELETE /api/v1/sessions/{id}/messages`).
+  - **Dual Reasoning Accordion**: Renders `<think>` reasoning chunks in expandable/collapsible amber accordions with token indicators above the final assistant response.
+  - **Reactive WebSocket Streaming with REST Fallback**: Real-time event streaming (`thought.delta`, `chat.delta`, `chat.complete`) with auto-reconnect and seamless REST fallback.
+  - **Spring Security Configuration**: `SecurityConfig` permits unauthenticated access to Web HUD assets, APIs, and WebSockets for local developer pairing.

@@ -52,18 +52,28 @@ source ./activate-env.sh
 ## ⚡ Quick Start: Running Omniwrench
 
 ### 1. Interactive Cyberpunk TUI
-Launch the interactive dual terminal workbench:
+Launch the interactive dual terminal workbench (adapts automatically to Standard, SSH, or Tmux):
 ```bash
+./omniwrench-helper.sh tui
+# or with standalone native image:
 ./omniwrench-app/target/omniwrench tui
 ```
 
-### 2. Single-Shot Non-Interactive Prompt
-Execute direct prompts without entering interactive mode:
+### 2. Single-Page Application (Web HUD)
+Launch in Web / Dual mode to access the browser HUD at `http://localhost:8080`:
 ```bash
-./omniwrench-app/target/omniwrench -p "hello"
+./omniwrench-helper.sh web
+# or default dual mode (TUI standby + Web server active):
+./omniwrench-helper.sh
 ```
 
-### 3. Local Model Provisioning & Management
+### 3. Single-Shot Non-Interactive Prompt
+Execute direct prompts without entering interactive mode:
+```bash
+./omniwrench-app/target/omniwrench -p "Analyze project code"
+```
+
+### 4. Local Model Provisioning & Management
 Search and pull local GGUF weights directly from Ollama or HuggingFace:
 ```bash
 # Search for available models
@@ -75,4 +85,33 @@ Search and pull local GGUF weights directly from Ollama or HuggingFace:
 # List locally cached models
 ./omniwrench-app/target/omniwrench -p "/model list"
 ```
+
+---
+
+## 🔄 Resuming Operations on Another Machine
+
+To clone and resume work on Omniwrench on a new machine:
+1. **Clone repository**:
+   ```bash
+   git clone <repo-url> omniwrench
+   cd omniwrench
+   ```
+2. **Setup GraalVM / Java 21+**:
+   ```bash
+   ./omniwrench-helper.sh setup-graalvm
+   source ./activate-env.sh
+   ```
+3. **Build & Verify Full Test Suite**:
+   ```bash
+   mvn clean test
+   ```
+4. **Compile Documentation Site**:
+   ```bash
+   ./helpers/build-docs.sh build
+   ```
+5. **Launch Interactive TUI or Web HUD**:
+   ```bash
+   ./omniwrench-helper.sh tui
+   # and open http://localhost:8080 in browser
+   ```
 

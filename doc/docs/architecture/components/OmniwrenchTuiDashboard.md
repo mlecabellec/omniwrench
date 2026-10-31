@@ -12,7 +12,7 @@
 
 ## Description
 
-Primary Lanterna-based terminal UI dashboard delivering a multi-pane Cyberpunk developer interface with glowing neon styling, modal Vim-inspired navigation, function keys (F1-F6), live status pills, and interactive modals.
+Primary interactive terminal dashboard delivering a full-screen Cyberpunk developer interface inspired by OpenCode (`tmp/opencode`). Seamlessly adapts to standard desktop consoles, remote SSH sessions, and tmux multiplexer panes. Features OSC 52 clipboard tunneling, side-channel `/btw` queries, active `/goal` tracking, `/env` runtime inspection, and live reasoning demultiplexing.
 
 ## Component Structure & Relationships
 
@@ -24,19 +24,23 @@ skinparam componentStyle uml2
 
 package "omniwrench-tui" {
   [OmniwrenchTuiDashboard] as COMP
+  [TerminalRenderer] as RENDER
+  [TerminalEnvironmentDetector] as DETECT
 }
 
-[Core System / Consumer] --> COMP : Uses / Invocations
-COMP --> [Dependencies / SPI] : Dispatches
+COMP --> DETECT : Detects Environment
+COMP --> RENDER : Formats Viewport & Widgets
+COMP --> [AgentEngine] : Dispatches Prompts
+COMP --> [SessionManager] : Queries Sessions
 @enduml
 ```
 
 ## Primary Responsibilities
 
-- Render multi-pane terminal layout (Chat history, tool execution, status HUD, diff viewer).
-- Handle user keyboard input in command (Esc) and insert (i) modes.
-- Display fuzzy-searchable slash command palette (/).
-- Update top header and bottom footer HUD telemetry in real-time.
+- Detect operating mode (STANDARD, SSH, TMUX) and configure terminal window title and tmux window names.
+- Render responsive Cyberpunk header banner and mode-specific telemetry status pills.
+- Route interactive commands: `/btw` (ephemeral prompt), `/goal` (objective management), `/env` (diagnostics), `/copy` (OSC 52 clipboard write), `/clear` (terminal reset), and conversational prompts.
+- Demultiplex and display reasoning thought streams separately from assistant dialogue answers.
 
 ## Related Architectural Links
 - [System Components Overview](../components.md)
