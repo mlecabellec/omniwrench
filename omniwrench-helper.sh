@@ -42,6 +42,16 @@ case "$COMMAND" in
         echo "Building Omniwrench GraalVM Native Image artifact..."
         mvn clean package -Pnative -DskipTests
         ;;
+    "build-static-native"|"static-native"|"static")
+        echo "Building Omniwrench Fully Static GraalVM Native Image (Approach 2)..."
+        shift || true
+        exec "$SCRIPT_DIR/helpers/build-static-native.sh" "$@"
+        ;;
+    "build-appimage"|"appimage"|"bundle")
+        echo "Building Omniwrench Self-Contained AppImage Bundle (Approach 3)..."
+        shift || true
+        exec "$SCRIPT_DIR/helpers/build-appimage.sh" "$@"
+        ;;
     "setup-graalvm"|"graalvm")
         echo "Downloading and configuring latest GraalVM SDK..."
         shift || true
@@ -59,7 +69,7 @@ case "$COMMAND" in
         ;;
     "-h"|"--help"|"help")
         echo "Omniwrench Orchestration & Workbench Helper Tool"
-        echo "Usage: $0 [tui|web|dual|test|build-jvm|build-native|setup-graalvm|docs|serve-docs]"
+        echo "Usage: $0 [tui|web|dual|test|build-jvm|build-native|build-static-native|build-appimage|setup-graalvm|docs|serve-docs]"
         ;;
     *)
         echo "Error: Unknown command '$COMMAND'" >&2

@@ -143,6 +143,87 @@ jobs:
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────
+  # JOB 3B: Build Fully Static GraalVM Native Image (Approach 2)
+  # ─────────────────────────────────────────────────────────────────
+  package-static-native:
+    name: Build Static Native Image (musl)
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Static Native Binary in GraalVM musl Container
+        run: |
+          ./helpers/build-static-native.sh --docker --clean
+
+      - name: Verify and Locate Static Binary
+        id: find-static-binary
+        run: |
+          STATIC_BIN="omniwrench-app/target/omniwrench-static"
+          if [[ ! -f "$STATIC_BIN" ]]; then
+            STATIC_BIN="omniwrench-app/target/omniwrench"
+          fi
+          if [[ -f "$STATIC_BIN" ]]; then
+            echo "static_path=$STATIC_BIN" >> "$GITHUB_OUTPUT"
+            file "$STATIC_BIN"
+          else
+            echo "Static binary not found at standard path" >&2
+            exit 1
+          fi
+
+      - name: Upload Static Native Binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: omniwrench-static-linux-x64
+          path: ${{ steps.find-static-binary.outputs.static_path }}
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 3C: Package Self-Contained AppImage Bundle (Approach 3)
+  # ─────────────────────────────────────────────────────────────────
+  package-appimage:
+    name: Package AppImage Bundle
+    runs-on: ubuntu-latest
+    needs: [ test, package-jvm ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Download Fat JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: omniwrench-fat-jar
+          path: omniwrench-app/target/
+
+      - name: Install AppImage Tooling Dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libfuse2 file
+
+      - name: Build AppImage and Relocatable Tarball
+        run: |
+          ./helpers/build-appimage.sh --mode jvm
+
+      - name: Upload AppImage and Distribution Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: omniwrench-appimage-linux-x64
+          path: |
+            dist/*.AppImage
+            dist/*.tar.gz
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────
   # JOB 4: Build Documentation HTML + PDF
   # ─────────────────────────────────────────────────────────────────
   docs:
@@ -180,7 +261,7 @@ jobs:
   release:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
-    needs: [ test, package-jvm, package-native, docs ]
+    needs: [ test, package-jvm, package-native, package-static-native, package-appimage, docs ]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
@@ -201,6 +282,17 @@ jobs:
           name: omniwrench-native-linux-x64
           path: release-assets/
 
+      - name: Download Static Native Binary (Approach 2)
+        uses: actions/download-artifact@v4
+        with:
+          name: omniwrench-static-linux-x64
+          path: release-assets/
+
+      - name: Download AppImage Bundle (Approach 3)
+        uses: actions/download-artifact@v4
+        with:
+          name: omniwrench-appimage-linux-x64
+          path: release-assets/
 
       - name: Download HTML site
         uses: actions/download-artifact@v4
@@ -233,28 +325,39 @@ jobs:
 
             ### Released Artifacts
 
-            | File | Description |
-            |---|---|
-            | `omniwrench` | GraalVM Native Image binary (instant <20ms startup) |
-            | `omniwrench-app-*.jar` | Spring Boot fat JAR — runs TUI and Web modes |
-            | `omniwrench-docs-site-*.zip` | Full HTML documentation site |
-            | `omniwrench-manual.pdf` | PDF reference manual |
+            | File | Description | Native Dependencies |
+            |---|---|---|
+            | `Omniwrench-*.AppImage` | Self-contained AppImage bundle with custom JRE and launcher | Fully bundled |
+            | `omniwrench-*-bundle-linux-x86_64.tar.gz` | Relocatable standalone application folder bundle | Fully bundled |
+            | `omniwrench-static` | Fully static GraalVM Native Image binary (musl libc) | Zero host dependencies |
+            | `omniwrench` | Dynamic GraalVM Native Image binary (<20ms startup) | Requires host glibc |
+            | `omniwrench-app-*.jar` | Standard Spring Boot fat JAR | Requires host JRE 17+ |
+            | `omniwrench-docs-site-*.zip` | Full offline HTML documentation site | N/A |
+            | `omniwrench-manual.pdf` | Styled PDF reference manual | N/A |
 
             ### Usage
 
             ```bash
-            # GraalVM Native Binary (Instant Execution)
-            ./omniwrench tui
-            ./omniwrench server
+            # 1. Self-Contained AppImage (All-in-one with bundled runtime)
+            chmod +x Omniwrench-*.AppImage
+            ./Omniwrench-*.AppImage tui
 
-            # JVM Fat JAR
+            # 2. Fully Static Binary (Zero host libc dependencies)
+            chmod +x omniwrench-static
+            ./omniwrench-static tui
+
+            # 3. Dynamic Native Binary
+            ./omniwrench tui
+
+            # 4. Standard JVM Fat JAR
             java -jar omniwrench-app-${{ steps.version.outputs.version }}.jar --tui
-            java -jar omniwrench-app-${{ steps.version.outputs.version }}.jar --server
             ```
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
             release-assets/*omniwrench*
+            release-assets/*.AppImage
+            release-assets/*.tar.gz
             release-assets/*.jar
             release-assets/*.zip
             release-assets/*.pdf

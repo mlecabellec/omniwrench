@@ -1,0 +1,134 @@
+# ==============================================================================
+# Omniwrench GitLab CI/CD Pipeline
+#
+# Multi-stage CI pipeline verifying tests, documentation, and compiling:
+#   1. Standard JVM Fat JAR
+#   2. Fully Static GraalVM Native Image (Approach 2 with musl libc)
+#   3. Self-Contained AppImage / Distribution Bundle (Approach 3 with custom JRE)
+# ==============================================================================
+
+stages:
+  - test
+  - package
+  - docs
+  - release
+
+variables:
+  MAVEN_OPTS: "-Dfile.encoding=UTF-8 -Dmaven.repo.local=.m2/repository"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -q"
+
+default:
+  image: maven:3.9.6-eclipse-temurin-21
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .m2/repository/
+      - .cache/
+
+# ─────────────────────────────────────────────────────────────────
+# STAGE: test
+# ─────────────────────────────────────────────────────────────────
+test:unit:
+  stage: test
+  script:
+    - mvn clean test $MAVEN_CLI_OPTS
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - "**/target/surefire-reports/TEST-*.xml"
+    paths:
+      - "**/target/surefire-reports/*.xml"
+      - "**/target/surefire-reports/*.txt"
+    expire_in: 7 days
+
+# ─────────────────────────────────────────────────────────────────
+# STAGE: package
+# ─────────────────────────────────────────────────────────────────
+package:jvm:
+  stage: package
+  needs: [ "test:unit" ]
+  script:
+    - mvn package -Pjvm-package -DskipTests $MAVEN_CLI_OPTS
+    - mkdir -p dist/
+    - cp omniwrench-app/target/omniwrench-app-*.jar dist/
+  artifacts:
+    paths:
+      - dist/*.jar
+    expire_in: 30 days
+
+package:static-native:
+  stage: package
+  image: ghcr.io/graalvm/native-image-community:21-muslib
+  needs: [ "test:unit" ]
+  script:
+    - mvn package -Pnative-static -DskipTests $MAVEN_CLI_OPTS
+    - mkdir -p dist/
+    - cp omniwrench-app/target/omniwrench-static dist/ || cp omniwrench-app/target/omniwrench dist/omniwrench-static
+  artifacts:
+    paths:
+      - dist/omniwrench-static
+    expire_in: 30 days
+
+package:appimage:
+  stage: package
+  needs: [ "package:jvm" ]
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq file curl binutils
+  script:
+    - mkdir -p omniwrench-app/target
+    - cp dist/*.jar omniwrench-app/target/
+    - ./helpers/build-appimage.sh --mode jvm --output-dir dist
+  artifacts:
+    paths:
+      - dist/*.AppImage
+      - dist/*.tar.gz
+    expire_in: 30 days
+
+# ─────────────────────────────────────────────────────────────────
+# STAGE: docs
+# ─────────────────────────────────────────────────────────────────
+docs:build:
+  stage: docs
+  image: python:3.11-slim
+  needs: [ "test:unit" ]
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git graphviz default-jre libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0
+  script:
+    - ./helpers/build-docs.sh build
+  artifacts:
+    paths:
+      - doc/site/
+    expire_in: 30 days
+
+# ─────────────────────────────────────────────────────────────────
+# STAGE: release
+# ─────────────────────────────────────────────────────────────────
+release:publish:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - "package:jvm"
+    - "package:static-native"
+    - "package:appimage"
+    - "docs:build"
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+.*$/'
+  script:
+    - echo "Publishing GitLab release for $CI_COMMIT_TAG"
+  release:
+    name: "Omniwrench $CI_COMMIT_TAG"
+    description: |
+      Omniwrench Release $CI_COMMIT_TAG
+      - Fully Static Native Image (Zero host dependencies, musl)
+      - AppImage & Relocatable Bundle (Bundled custom minimal JRE)
+      - Executable Spring Boot Fat JAR
+    tag_name: "$CI_COMMIT_TAG"
+    assets:
+      links:
+        - name: "Static Native Binary (musl)"
+          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/omniwrench-static?job=package:static-native"
+        - name: "AppImage Distribution Bundle"
+          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/Omniwrench-${CI_COMMIT_TAG}-x86_64.AppImage?job=package:appimage"
+        - name: "Spring Boot Fat JAR"
+          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/omniwrench-app-${CI_COMMIT_TAG}.jar?job=package:jvm"

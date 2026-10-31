@@ -246,6 +246,14 @@
                 <packaging.type>jar</packaging.type>
             </properties>
         </profile>
+
+        <!-- GraalVM Fully Static Native Image compilation profile (musl libc) -->
+        <profile>
+            <id>native-static</id>
+            <properties>
+                <packaging.type>jar</packaging.type>
+            </properties>
+        </profile>
     </profiles>
 </project>
 

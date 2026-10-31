@@ -2,9 +2,11 @@ name: Omniwrench Gitea CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, main ]
+    tags:
+      - 'v*.*.*'
   pull_request:
-    branches: [ master ]
+    branches: [ master, main ]
 
 jobs:
   build-and-test:
@@ -24,5 +26,22 @@ jobs:
       - name: Compile and Run All Module Tests
         run: mvn clean test --batch-mode
 
+      - name: Build Fat JAR Package
+        run: mvn package -Pjvm-package -DskipTests --batch-mode
+
+      - name: Build AppImage and Relocatable Distribution Bundle (Approach 3)
+        run: ./helpers/build-appimage.sh --bundle-only
+
       - name: Build Documentation Site
         run: ./helpers/build-docs.sh build
+
+  package-static-native:
+    name: Build Static Native Binary (Approach 2)
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compile Static Native Image (musl)
+        run: ./helpers/build-static-native.sh --docker --clean
