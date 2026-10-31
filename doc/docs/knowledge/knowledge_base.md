@@ -662,3 +662,42 @@ This document stores persistent project knowledge, architectural decisions, and 
   - **Dual Reasoning Accordion**: Renders `<think>` reasoning chunks in expandable/collapsible amber accordions with token indicators above the final assistant response.
   - **Reactive WebSocket Streaming with REST Fallback**: Real-time event streaming (`thought.delta`, `chat.delta`, `chat.complete`) with auto-reconnect and seamless REST fallback.
   - **Spring Security Configuration**: `SecurityConfig` permits unauthenticated access to Web HUD assets, APIs, and WebSockets for local developer pairing.
+
+### ADR-0060: Zero-Dependency Fully Static GraalVM Native Binary Compilation (musl libc)
+- **Status**: Accepted (2026-10-31)
+- **Context**: Standard GraalVM native image compilation links dynamically against the host C library (`glibc`), dynamic linkers, and thread libraries. This causes portability failures and `GLIBC_X.XX not found` errors when moving binaries across different Linux distributions or container runtimes.
+- **Decision**: Implemented fully static Ahead-Of-Time native compilation via `musl libc`:
+  - **Maven Profile**: Added `native-static` profile to root `pom.xml` and `omniwrench-app/pom.xml` with `--static`, `--libc=musl`, `--no-fallback`, and `-H:+ReportExceptionStackTraces`.
+  - **Orchestration Script**: Implemented `helpers/build-static-native.sh` supporting local compilation with host GraalVM + musl bundle or containerized builds (`--docker` using `ghcr.io/graalvm/native-image-community:21-muslib`).
+  - **Deliverable**: A completely self-contained Linux ELF binary (`omniwrench-static`) where `ldd` verifies `not a dynamic executable`, eliminating all host glibc and C runtime dependencies.
+
+### ADR-0061: Self-Contained AppImage and Distribution Bundle Packaging with Minimal jlink JRE
+- **Status**: Accepted (2026-10-31)
+- **Context**: Users running standard JVM distributions frequently encounter missing Java runtimes (JRE 17+ / 21+) or missing native CLI tools (`llama-cli`) and shared libraries (`libllama.so`). A single drop-in Linux desktop package was needed without requiring root privileges or package manager installation.
+- **Decision**: Implemented `helpers/build-appimage.sh` producing self-contained `.AppImage` packages and relocatable `.tar.gz` distribution bundles:
+  - **Minimal Runtime via `jlink`**: Generates a tailored, stripped Java 21 runtime (~35-40 MB) containing strictly the required modules: `java.base`, `java.desktop`, `java.logging`, `java.naming`, `java.management`, `java.security.jgss`, `java.instrument`, `java.net.http`, `java.sql`, and `jdk.unsupported`.
+  - **Filesystem Hierarchy (`AppDir`)**: Assembles `AppRun` launcher, Freedesktop specification (`omniwrench.desktop`), standard 256x256 PNG application icon and `.DirIcon`, bundled JAR, custom JRE, and `/usr/lib/native/` for native shared libraries.
+  - **Automatic Native Tool Bundling**: Supports auto-discovery or explicit flags (`--llama-cli`, `--native-libs`) to embed native C/C++ inference tools directly into the bundle payload.
+  - **SquashFS 4.0 Packaging**: Integrates `appimagetool` with continuous fallback to `--appimage-extract-and-run` when FUSE is unavailable in unprivileged container/sandboxed environments.
+
+### ADR-0062: Unified Multi-Forge CI/CD Pipeline Automation for Native Deliverables
+- **Status**: Accepted (2026-10-31)
+- **Context**: Omniwrench repositories are mirrored and maintained across multiple Git hosting forges: self-hosted primary (`gitea1`), secondary fallback (`gitea2`), GitLab, and GitHub. Build definitions must ensure feature parity and automated release publishing across all environments.
+- **Decision**: Unified automated CI/CD workflows across all three forge topologies:
+  - **GitHub Actions (`.github/workflows/ci.yml`)**: Added parallel build jobs `package-static-native` (Approach 2) and `package-appimage` (Approach 3), integrating both deliverables directly into automated tag releases (`softprops/action-gh-release@v2`).
+  - **GitLab CI (`.gitlab-ci.yml`)**: Created multi-stage declarative pipeline (`test`, `package:jvm`, `package:static-native`, `package:appimage`, `docs:build`, `release:publish`) using official container images (`maven:3.9.6-eclipse-temurin-21`, `ghcr.io/graalvm/native-image-community:21-muslib`, `gitlab-release-cli`).
+  - **Gitea Actions (`.gitea/workflows/ci.yml`)**: Expanded test workflow to compile the Fat JAR, generate the relocatable distribution bundle via `build-appimage.sh --bundle-only`, and verify documentation compilation.
+
+---
+
+## 🛠️ Operational Engineering Knowledge & Lessons Learned
+
+### Native Packaging & SubstrateVM Musl Constraints
+1. **GraalVM Musl Prerequisite**: Running `--libc=musl` locally requires the GraalVM musl bundle installed or `x86_64-linux-musl-gcc` configured in `$PATH`. When building on dynamic glibc hosts (like Debian/Ubuntu), running via `ghcr.io/graalvm/native-image-community:21-muslib` provides a reliable, reproducible hermetic static build environment.
+2. **AppImage Tooling Requirements**:
+   - `appimagetool` strictly enforces the presence of a valid `.DirIcon` and top-level `.png` icon matching the `Icon=` key in `omniwrench.desktop`. An SVG icon alone triggers validation rejection.
+   - When running in containerized or rootless CI environments lacking `/dev/fuse`, invoking `appimagetool` with `--appimage-extract-and-run` bypasses FUSE mount constraints cleanly.
+   - Desktop category strings must adhere to Freedesktop standards (`Development;IDE;`) without conflicting duplicate primary categories.
+3. **Java `jlink` Footprint Optimization**:
+   - Running `jlink` with `--no-header-files --no-man-pages --strip-debug --compress=2` reduces an uncompressed 250 MB JDK down to a ~38 MB runtime footprint.
+   - Spring Boot, Netty, and Project Reactor require `jdk.unsupported` (for `sun.misc.Unsafe` internal memory access). Omitting `jdk.unsupported` causes runtime `ClassNotFoundException` during Netty buffer pool initialization.
