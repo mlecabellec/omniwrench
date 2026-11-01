@@ -74,6 +74,7 @@ nav:
       - Interfaces & SPIs: architecture/interfaces.md
       - File & State Formats: architecture/file_formats.md
       - Configuration Specs: architecture/configuration.md
+      - AI Terminal Agents TUI Analysis: architecture/tui_agents_analysis.md
   - Comparative Analysis & Reports:
       - Master Reports Index: reports/reports_index.md
       - Google Antigravity SDK Analysis: reports/antigravity_sdk_analysis.md
@@ -153,6 +154,7 @@ nav:
           - "REQ-00097": requirements/REQ-00097.md
           - "REQ-00098": requirements/REQ-00098.md
           - "REQ-00099": requirements/REQ-00099.md
+          - "REQ-00100": requirements/REQ-00100.md
   - Features:
       - Features Register: features/features_index.md
   - Use Cases:
@@ -196,5 +198,9 @@ nav:
           - "Task TSK-20260822-012": project/tasks/TSK-20260822-012.md
           - "Task TSK-20260822-013": project/tasks/TSK-20260822-013.md
           - "Task TSK-20260822-014": project/tasks/TSK-20260822-014.md
+          - "Task TSK-20260822-015": project/tasks/TSK-20260822-015.md
+          - "Task TSK-20261101-016": project/tasks/TSK-20261101-016.md
+          - "Task TSK-20261101-017": project/tasks/TSK-20261101-017.md
+          - "Task TSK-20261101-018": project/tasks/TSK-20261101-018.md
   - Knowledge Base & Memory:
       - Project Knowledge Base: knowledge/knowledge_base.md

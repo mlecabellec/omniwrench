@@ -4,7 +4,6 @@ import com.omniwrench.config.OmniwrenchProperties;
 import com.omniwrench.core.AgentEngine;
 import com.omniwrench.core.SessionManager;
 import com.omniwrench.core.ToolRegistry;
-import com.omniwrench.model.AgentMessage;
 import com.omniwrench.model.SessionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,35 +11,38 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
- * Interactive full-screen / line-oriented TUI dashboard driving the Cyberpunk pair-programming loop.
- * Features OpenCode-inspired responsive viewport adapting, SSH &amp; tmux multiplexer detection,
- * OSC 52 clipboard tunneling, side-channel `/btw` queries, `/goal` management, and `/env` diagnostics.
+ * Interactive dual-mode TUI orchestrator driving both the Minimal inline stream mode
+ * ({@link MinimalTuiModeEngine}) and the Full-Screen dynamically resizable workbench mode
+ * ({@link FullscreenTuiModeEngine}).
  *
- * Traceability:
- * - Requirement: REQ-00001 (Dual Headless CLI &amp; Interactive TUI Presentation Engine), REQ-00088 (Dual Chat Mode Reasoning)
- * - Feature: FR-00001 (Dual Headless &amp; Interactive Presentation Engine)
- * - Use Case: UC-00001 (Interactive TUI Pair Programming)
- * - Task: TSK-20260822-003 (Modern Cyberpunk TUI Design &amp; Integration), TSK-20260822-007 (Dual Chat Mode Reasoning Demux)
- * - ADR: ADR-0001 (Unified Dual Architecture), ADR-0047 (Dual Chat Mode &amp; Explicit Reasoning Demux)
+ * <p>Inspired by OpenCode, Antigravity CLI ({@code agy}), OpenClaw, and Claude Code,
+ * supporting responsive viewport adapting, SSH &amp; tmux multiplexer detection,
+ * OSC 52 clipboard tunneling, side-channel {@code /btw} queries, {@code /goal} management,
+ * semantic XTerm-256 themes, and centered modal command palettes.
+ *
+ * <p>Traceability:
+ * <ul>
+ *   <li>Requirement: REQ-00001 (Dual Headless CLI &amp; Interactive TUI Presentation Engine)</li>
+ *   <li>Requirement: REQ-00071 (Multi-Pane Terminal HUD), REQ-00084 (Markdown &amp; Code Highlighting)</li>
+ *   <li>Requirement: REQ-00088 (Dual Chat Mode Reasoning), REQ-00099 (XTerm-256 Color Palette TUI Visual Theming Engine)</li>
+ *   <li>Requirement: REQ-00100 (Dual-Mode Minimal Inline Stream &amp; Full-Screen Resizable TUI Workbench)</li>
+ *   <li>Feature: FR-00001, FR-00046, FR-00047, FR-00048, FR-00049, FR-00050</li>
+ *   <li>Use Case: UC-00001 (Interactive TUI Pair Programming)</li>
+ *   <li>Task: TSK-20260822-003, TSK-20261101-016, TSK-20261101-018</li>
+ *   <li>ADR: ADR-0001, ADR-0047, ADR-0063</li>
+ * </ul>
  */
 @Component
-public class OmniwrenchTuiDashboard {
+public final class OmniwrenchTuiDashboard {
 
     /** Logger instance. */
     private static final Logger LOGGER = LoggerFactory.getLogger(OmniwrenchTuiDashboard.class);
 
-    /** Prefix length for `/btw ` command string. */
-    private static final int BTW_PREFIX_LENGTH = 5;
-    /** Prefix length for `/goal ` command string. */
-    private static final int GOAL_PREFIX_LENGTH = 6;
-    /** Terminal clear escape sequence. */
-    private static final String ANSI_CLEAR_SCREEN = "\u001B[2J\u001B[H";
+    /** Default HTTP server port per CS-0040.2. */
+    private static final int DEFAULT_SERVER_PORT = 8080;
 
     /** Terminal renderer component. */
     private final TerminalRenderer renderer;
@@ -54,30 +56,39 @@ public class OmniwrenchTuiDashboard {
     private final OmniwrenchProperties properties;
     /** Terminal environment detector. */
     private final TerminalEnvironmentDetector environmentDetector;
+    /** Minimal inline TUI mode engine. */
+    private final MinimalTuiModeEngine minimalEngine;
+    /** Fullscreen resizable TUI mode engine. */
+    private final FullscreenTuiModeEngine fullscreenEngine;
 
     /** Web server port injected from Spring environment. */
     @Value("${server.port:8080}")
-    private int serverPort;
+    private int serverPort = DEFAULT_SERVER_PORT;
 
     /**
      * Constructs the TUI dashboard with required services, defaulting to standard environment detector.
      *
-     * @param rendererVal terminal renderer component
-     * @param agentEngineVal agent reasoning engine
-     * @param sessionManagerVal session lifecycle manager
-     * @param toolRegistryVal tool registry service
-     * @param propertiesVal configuration properties
+     * <p>Traceability: REQ-00001, REQ-00100, FR-00047, CS-0050.1
+     *
+     * @param rendererVal terminal renderer component, must not be null
+     * @param agentEngineVal agent reasoning engine, must not be null
+     * @param sessionManagerVal session lifecycle manager, must not be null
+     * @param toolRegistryVal tool registry service, must not be null
+     * @param propertiesVal configuration properties, must not be null
      */
     public OmniwrenchTuiDashboard(final TerminalRenderer rendererVal,
-                                   final AgentEngine agentEngineVal,
-                                   final SessionManager sessionManagerVal,
-                                   final ToolRegistry toolRegistryVal,
-                                   final OmniwrenchProperties propertiesVal) {
+                                  final AgentEngine agentEngineVal,
+                                  final SessionManager sessionManagerVal,
+                                  final ToolRegistry toolRegistryVal,
+                                  final OmniwrenchProperties propertiesVal) {
+        // [REQ-00100, FR-00047] Delegate to primary constructor with default TerminalEnvironmentDetector
         this(rendererVal, agentEngineVal, sessionManagerVal, toolRegistryVal, propertiesVal, new TerminalEnvironmentDetector());
     }
 
     /**
      * Constructs the TUI dashboard with required services and explicit environment detector.
+     *
+     * <p>Traceability: REQ-00001, REQ-00100, FR-00047, CS-0050.1
      *
      * @param rendererVal terminal renderer component, must not be null
      * @param agentEngineVal agent reasoning engine, must not be null
@@ -88,142 +99,93 @@ public class OmniwrenchTuiDashboard {
      */
     @Autowired
     public OmniwrenchTuiDashboard(final TerminalRenderer rendererVal,
-                                   final AgentEngine agentEngineVal,
-                                   final SessionManager sessionManagerVal,
-                                   final ToolRegistry toolRegistryVal,
-                                   final OmniwrenchProperties propertiesVal,
-                                   final TerminalEnvironmentDetector environmentDetectorVal) {
+                                  final AgentEngine agentEngineVal,
+                                  final SessionManager sessionManagerVal,
+                                  final ToolRegistry toolRegistryVal,
+                                  final OmniwrenchProperties propertiesVal,
+                                  final TerminalEnvironmentDetector environmentDetectorVal) {
+        // [REQ-00100, FR-00047, CS-0050.1] Validate constructor dependencies
         this.renderer = Objects.requireNonNull(rendererVal, "renderer must not be null");
         this.agentEngine = Objects.requireNonNull(agentEngineVal, "agentEngine must not be null");
         this.sessionManager = Objects.requireNonNull(sessionManagerVal, "sessionManager must not be null");
         this.toolRegistry = Objects.requireNonNull(toolRegistryVal, "toolRegistry must not be null");
+        // [REQ-00100, FR-00047, CS-0050.1] Validate configuration, detector, and instantiate mode engines
         this.properties = Objects.requireNonNull(propertiesVal, "properties must not be null");
         this.environmentDetector = Objects.requireNonNull(environmentDetectorVal, "environmentDetector must not be null");
+        this.minimalEngine = new MinimalTuiModeEngine(
+                this.renderer, this.agentEngine, this.sessionManager, this.toolRegistry, this.properties);
+        this.fullscreenEngine = new FullscreenTuiModeEngine(
+                this.agentEngine, this.sessionManager, this.toolRegistry, this.properties);
     }
 
     /**
-     * Starts the interactive command loop on standard input/output.
+     * Starts the interactive TUI loop using the configured display mode
+     * ({@code minimal} by default, or {@code fullscreen} when configured).
+     *
+     * <p>Traceability: REQ-00100, FR-00047, FR-00050, CS-0060.3
      */
     public void startInteractiveLoop() {
+        // [REQ-00100, FR-00047, FR-00050, CS-0060.3] Route to fullscreen or minimal loop based on configuration
+        final TuiDisplayMode configuredMode = TuiDisplayMode.fromString(properties.getTui().getDisplayMode());
+        LOGGER.info("Starting interactive TUI loop in {} mode (port {})", configuredMode, serverPort);
+        if (configuredMode == TuiDisplayMode.FULLSCREEN) {
+            startFullscreenLoop();
+        } else {
+            startMinimalLoop();
+        }
+    }
+
+    /**
+     * Starts the minimal inline stream-oriented TUI mode.
+     *
+     * <p>Traceability: REQ-00001, REQ-00100, FR-00047
+     */
+    public void startMinimalLoop() {
+        // [REQ-00100, FR-00047] Detect terminal environment, synchronize property, and start minimal engine
         final TerminalEnvironment env = environmentDetector.detect();
-
-        // Set terminal window title and tmux window name if multiplexer is active
-        System.out.print(env.formatWindowTitle("Omniwrench :: Dual Agent Workbench"));
-        System.out.print(env.formatTmuxWindowName("omniwrench"));
-        System.out.flush();
-
-        System.out.println(renderer.renderBanner(env));
-        System.out.println(renderer.renderStatusBar(
-                properties.getMode(),
-                sessionManager.getActiveSessionCount(),
-                toolRegistry.getToolCount(),
-                serverPort,
-                env
-        ));
-        System.out.println("\nType your goal, prompt, or commands (/btw, /goal, /copy, /env, /clear, /run <cmd>, /cat <file>, /help, exit):\n");
-
         final SessionContext session = sessionManager.getDefaultSession();
-        String currentGoal = "Autonomous pair-programming and tool assistance";
-        String lastAgentContent = "";
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8))) {
-            while (true) {
-                System.out.print(renderer.renderPromptBox(""));
-                final String line = reader.readLine();
-                if (line == null || "exit".equalsIgnoreCase(line.trim()) || "quit".equalsIgnoreCase(line.trim())) {
-                    System.out.println("\nShutting down Omniwrench TUI. Goodbye!");
-                    break;
-                } else {
-                    final String trimmed = line.trim();
-                    if (trimmed.isEmpty()) {
-                        continue;
-                    } else if ("/help".equalsIgnoreCase(trimmed)) {
-                        printHelp();
-                        continue;
-                    } else if ("/clear".equalsIgnoreCase(trimmed)) {
-                        System.out.print(ANSI_CLEAR_SCREEN);
-                        System.out.flush();
-                        continue;
-                    } else if ("/env".equalsIgnoreCase(trimmed)) {
-                        System.out.println(renderer.renderEnvironmentCard(env));
-                        continue;
-                    } else if (trimmed.startsWith("/goal")) {
-                        currentGoal = handleGoalCommand(trimmed, currentGoal);
-                        continue;
-                    } else if (trimmed.startsWith("/btw")) {
-                        handleBtwCommand(session, trimmed);
-                        continue;
-                    } else if ("/copy".equalsIgnoreCase(trimmed)) {
-                        handleCopyCommand(env, lastAgentContent);
-                        continue;
-                    } else {
-                        // Regular prompt execution
-                        System.out.println(renderer.renderMessageBubble("user", trimmed));
-                        final AgentMessage response = agentEngine.processPrompt(session, trimmed);
-                        if (response.hasThinking()) {
-                            System.out.println(renderer.renderThinkingBox(response.getThinking()));
-                        } else {
-                            // No explicit thinking stream
-                        }
-                        lastAgentContent = response.getContent();
-                        System.out.println(renderer.renderMessageBubble("agent", response.getContent()));
-                        System.out.println();
-                    }
-                }
-            }
-        } catch (final Exception e) {
-            LOGGER.error("Error during TUI interactive execution", e);
-        }
+        properties.getTui().setDisplayMode(TuiDisplayMode.MINIMAL.getConfigKey());
+        minimalEngine.start(session, env);
     }
 
-    private String handleGoalCommand(final String trimmed, final String currentGoal) {
-        if (trimmed.length() > GOAL_PREFIX_LENGTH) {
-            final String newGoal = trimmed.substring(GOAL_PREFIX_LENGTH).trim();
-            System.out.println(renderer.renderGoalCard(newGoal));
-            return newGoal;
-        } else {
-            System.out.println(renderer.renderGoalCard(currentGoal));
-            return currentGoal;
-        }
+    /**
+     * Starts the full-screen dynamically resizable TUI workbench mode.
+     *
+     * <p>Traceability: REQ-00071, REQ-00100, FR-00047, FR-00048
+     */
+    public void startFullscreenLoop() {
+        // [REQ-00100, FR-00047, FR-00048] Detect terminal environment, synchronize property, and start fullscreen engine
+        final TerminalEnvironment env = environmentDetector.detect();
+        final SessionContext session = sessionManager.getDefaultSession();
+        properties.getTui().setDisplayMode(TuiDisplayMode.FULLSCREEN.getConfigKey());
+        fullscreenEngine.start(session, env);
     }
 
-    private void handleBtwCommand(final SessionContext session, final String trimmed) {
-        if (trimmed.length() > BTW_PREFIX_LENGTH) {
-            final String question = trimmed.substring(BTW_PREFIX_LENGTH).trim();
-            final AgentMessage sideChannelResponse = agentEngine.processPrompt(session, "[SIDE-CHANNEL QUESTION] " + question);
-            System.out.println(renderer.renderBtwBox(question, sideChannelResponse.getContent()));
-        } else {
-            System.out.println("Usage: /btw <question>  (Ask an ephemeral side-channel question)");
-        }
+    /**
+     * Renders a non-interactive snapshot of the minimal TUI view for diagnostics or testing.
+     *
+     * <p>Traceability: REQ-00001, REQ-00100, FR-00047
+     *
+     * @return rendered minimal TUI snapshot string
+     */
+    public String renderMinimalSnapshot() {
+        // [REQ-00100, FR-00047] Render deterministic minimal TUI snapshot
+        final TerminalEnvironment env = environmentDetector.detect();
+        final SessionContext session = sessionManager.getDefaultSession();
+        return minimalEngine.renderSnapshot(session, env);
     }
 
-    private void handleCopyCommand(final TerminalEnvironment env, final String lastAgentContent) {
-        if (lastAgentContent.isEmpty()) {
-            System.out.println("No assistant response available to copy yet.");
-        } else {
-            System.out.print(env.formatOsc52Clipboard(lastAgentContent));
-            System.out.flush();
-            final int byteCount = lastAgentContent.getBytes(StandardCharsets.UTF_8).length;
-            System.out.println(renderer.renderCopyFeedback(byteCount));
-        }
-    }
-
-    private void printHelp() {
-        System.out.println("\nAvailable Omniwrench Commands:");
-        System.out.println("  /help           - Display this help message");
-        System.out.println("  /btw <question> - Ephemeral side-channel prompt inspired by OpenCode");
-        System.out.println("  /goal [goal]    - Display or update current session goal");
-        System.out.println("  /env            - Display terminal mode, SSH/tmux detection, and viewport telemetry");
-        System.out.println("  /copy           - Copy last assistant response to clipboard using OSC 52");
-        System.out.println("  /clear          - Clear terminal screen");
-        System.out.println("  /run <command>  - Execute shell command via CommandExecutionTool");
-        System.out.println("  /cat <path>     - Read file contents via FileOperationsTool");
-        System.out.println("  /thinking [cmd] - Configure reasoning mode (on, off, low, medium, high, max, status)");
-        System.out.println("  /model list     - List locally downloaded quantized GGUF models");
-        System.out.println("  /model search   - Search Ollama and HuggingFace repositories");
-        System.out.println("  /model pull     - Pull and verify GGUF model weights");
-        System.out.println("  /model rm       - Delete local model weights from disk");
-        System.out.println("  /tools          - List registered tools and capabilities");
-        System.out.println("  exit / quit     - Exit Omniwrench\n");
+    /**
+     * Renders a non-interactive snapshot of the fullscreen TUI view for diagnostics or testing.
+     *
+     * <p>Traceability: REQ-00071, REQ-00100, FR-00048
+     *
+     * @return rendered fullscreen TUI snapshot string
+     */
+    public String renderFullscreenSnapshot() {
+        // [REQ-00071, REQ-00100, FR-00048] Render deterministic fullscreen TUI snapshot
+        final TerminalEnvironment env = environmentDetector.detect();
+        final SessionContext session = sessionManager.getDefaultSession();
+        return fullscreenEngine.renderSnapshot(session, env);
     }
 }

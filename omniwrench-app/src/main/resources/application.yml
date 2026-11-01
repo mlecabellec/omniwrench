@@ -11,8 +11,10 @@ omniwrench:
   mode: ${OMNIWRENCH_MODE:dual} # dual, tui, or web
   workspace-path: ${OMNIWRENCH_WORKSPACE:.}
   tui:
-    theme: cyberpunk
+    theme: ${OMNIWRENCH_TUI_THEME:cyberpunk}
     fps-target: 30
+    display-mode: ${OMNIWRENCH_TUI_MODE:minimal} # minimal or fullscreen
+    sidebar-mode: ${OMNIWRENCH_TUI_SIDEBAR:auto} # auto, show, or hide
   engine:
     max-reasoning-steps: 50
     default-timeout-seconds: 120

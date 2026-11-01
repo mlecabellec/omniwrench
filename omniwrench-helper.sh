@@ -19,8 +19,16 @@ fi
 
 case "$COMMAND" in
     "tui"|"cli")
-        echo "Launching Omniwrench in interactive TUI mode..."
+        echo "Launching Omniwrench in interactive Minimal TUI mode..."
         OMNIWRENCH_MODE=tui mvn spring-boot:run -Dspring-boot.run.arguments="tui"
+        ;;
+    "tui-full"|"fullscreen"|"fs")
+        echo "Launching Omniwrench in Full-Screen Resizable TUI Workbench mode..."
+        OMNIWRENCH_MODE=tui OMNIWRENCH_TUI_MODE=fullscreen mvn spring-boot:run -Dspring-boot.run.arguments="tui --fullscreen"
+        ;;
+    "tui-minimal"|"minimal")
+        echo "Launching Omniwrench in Minimal Inline Stream TUI mode..."
+        OMNIWRENCH_MODE=tui OMNIWRENCH_TUI_MODE=minimal mvn spring-boot:run -Dspring-boot.run.arguments="tui --minimal"
         ;;
     "web"|"server")
         echo "Launching Omniwrench in background Web Server mode..."
@@ -69,7 +77,7 @@ case "$COMMAND" in
         ;;
     "-h"|"--help"|"help")
         echo "Omniwrench Orchestration & Workbench Helper Tool"
-        echo "Usage: $0 [tui|web|dual|test|build-jvm|build-native|build-static-native|build-appimage|setup-graalvm|docs|serve-docs]"
+        echo "Usage: $0 [tui|tui-full|fullscreen|tui-minimal|minimal|web|dual|test|build-jvm|build-native|build-static-native|build-appimage|setup-graalvm|docs|serve-docs]"
         ;;
     *)
         echo "Error: Unknown command '$COMMAND'" >&2

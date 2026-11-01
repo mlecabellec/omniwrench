@@ -8,12 +8,16 @@ import java.util.Objects;
  * High-impact Cyberpunk terminal renderer providing ANSI styled widgets, neon banners,
  * environment-adaptive status bars, and OpenCode-inspired side-channel cards.
  *
- * Traceability:
- * - Requirement: REQ-00001 (Dual Headless CLI &amp; Interactive TUI Presentation Engine), REQ-00088 (Dual Chat Mode Reasoning)
- * - Feature: FR-00001 (Dual Headless &amp; Interactive Presentation Engine)
- * - Use Case: UC-00001 (Interactive TUI Pair Programming)
- * - Task: TSK-20260822-003 (Modern Cyberpunk TUI Design), TSK-20260822-007 (Dual Chat Mode &amp; Thinking Demux)
- * - ADR: ADR-0001 (Unified Dual Architecture), ADR-0047 (Dual Chat Mode &amp; Explicit Reasoning Demux)
+ * <p>Traceability:
+ * <ul>
+ *   <li>Requirement: REQ-00001 (Dual Headless CLI &amp; Interactive TUI Presentation Engine)</li>
+ *   <li>Requirement: REQ-00088 (Dual Chat Mode Reasoning), REQ-00099 (XTerm-256 Color Palette TUI Visual Theming Engine)</li>
+ *   <li>Requirement: REQ-00100 (Dual-Mode Minimal Inline Stream &amp; Full-Screen Resizable TUI Workbench)</li>
+ *   <li>Feature: FR-00001, FR-00035, FR-00046, FR-00047</li>
+ *   <li>Use Case: UC-00001 (Interactive TUI Pair Programming)</li>
+ *   <li>Task: TSK-20260822-003, TSK-20260822-007, TSK-20261101-016, TSK-20261101-018</li>
+ *   <li>ADR: ADR-0001, ADR-0047, ADR-0063</li>
+ * </ul>
  */
 @Component
 public final class TerminalRenderer {
@@ -52,9 +56,12 @@ public final class TerminalRenderer {
     /**
      * Renders standard wide ASCII banner header with Cyberpunk borders.
      *
+     * <p>Traceability: REQ-00001, REQ-00099, FR-00001
+     *
      * @return formatted banner string
      */
     public String renderBanner() {
+        // [REQ-00001, REQ-00099, FR-00001] Format full-width Cyberpunk box-drawing banner
         return CYAN + BOLD
                 + "╔══════════════════════════════════════════════════════════════════════════════╗\n"
                 + "║  🛠️  O M N I W R E N C H  ::  AUTONOMOUS DUAL AGENT WORKBENCH               ║\n"
@@ -66,10 +73,13 @@ public final class TerminalRenderer {
     /**
      * Renders an environment-adaptive ASCII banner header, switching to compact layout if narrow.
      *
+     * <p>Traceability: REQ-00001, REQ-00100, FR-00001, FR-00047, CS-0050.1, CS-0060.3
+     *
      * @param env detected terminal environment, must not be null
      * @return formatted banner string
      */
     public String renderBanner(final TerminalEnvironment env) {
+        // [REQ-00001, REQ-00100, CS-0050.1, CS-0060.3] Adapt banner to narrow or standard viewport width
         final TerminalEnvironment nonNullEnv = Objects.requireNonNull(env, "env must not be null");
         if (nonNullEnv.isNarrow()) {
             return CYAN + BOLD + "⚡ OMNIWRENCH :: DUAL AGENT WORKBENCH ⚡" + RESET;
@@ -81,13 +91,16 @@ public final class TerminalRenderer {
     /**
      * Renders telemetry status pills.
      *
-     * @param mode active execution mode
+     * <p>Traceability: REQ-00001, FR-00001, CS-0050.1
+     *
+     * @param mode active execution mode, must not be null
      * @param activeSessions number of active sessions
      * @param toolsCount count of registered tools
      * @param port web server port
      * @return formatted status bar string
      */
     public String renderStatusBar(final String mode, final int activeSessions, final int toolsCount, final int port) {
+        // [REQ-00001, FR-00001, CS-0050.1] Validate non-null mode and format status bar pills
         final String nonNullMode = Objects.requireNonNull(mode, "mode must not be null");
         return BG_DARK + CYAN + " [MODE: " + BOLD + nonNullMode.toUpperCase() + RESET + BG_DARK + CYAN + "]"
                 + " [SESSIONS: " + BOLD + activeSessions + RESET + BG_DARK + CYAN + "]"
@@ -98,6 +111,8 @@ public final class TerminalRenderer {
 
     /**
      * Renders telemetry status pills with environment pill (Standard, SSH, or TMUX).
+     *
+     * <p>Traceability: REQ-00001, REQ-00100, FR-00001, FR-00047, CS-0050.1, CS-0060.3
      *
      * @param mode active execution mode, must not be null
      * @param activeSessions number of active sessions
@@ -111,9 +126,11 @@ public final class TerminalRenderer {
                                   final int toolsCount,
                                   final int port,
                                   final TerminalEnvironment env) {
+        // [REQ-00001, FR-00001, CS-0050.1] Validate non-null mode and environment
         final String nonNullMode = Objects.requireNonNull(mode, "mode must not be null");
         final TerminalEnvironment nonNullEnv = Objects.requireNonNull(env, "env must not be null");
 
+        // [REQ-00001, FR-00001, CS-0060.3] Build environment badge for TMUX, SSH, or LOCAL
         final String envPill;
         if (nonNullEnv.getMode() == TerminalMode.TMUX) {
             final String pane = nonNullEnv.getTmuxPane();
@@ -127,6 +144,7 @@ public final class TerminalRenderer {
             envPill = BG_GREEN + " [LOCAL] " + RESET + " ";
         }
 
+        // [REQ-00001, FR-00001] Concatenate environment pill with runtime telemetry pills
         return envPill + BG_DARK + CYAN
                 + " [MODE: " + BOLD + nonNullMode.toUpperCase() + RESET + BG_DARK + CYAN + "]"
                 + " [SESSIONS: " + BOLD + activeSessions + RESET + BG_DARK + CYAN + "]"
@@ -138,10 +156,13 @@ public final class TerminalRenderer {
     /**
      * Renders user command input prompt.
      *
+     * <p>Traceability: REQ-00001, FR-00001, CS-0050.1
+     *
      * @param promptText initial prompt text, must not be null
      * @return formatted prompt string
      */
     public String renderPromptBox(final String promptText) {
+        // [REQ-00001, FR-00001, CS-0050.1] Validate non-null promptText and format prompt prefix
         final String text = Objects.requireNonNull(promptText, "promptText must not be null");
         return MAGENTA + BOLD + "omniwrench> " + RESET + BRIGHT_WHITE + text;
     }
@@ -149,10 +170,13 @@ public final class TerminalRenderer {
     /**
      * Renders an expandable/dimmed neon reasoning thinking box.
      *
+     * <p>Traceability: REQ-00088, FR-00035, CS-0050.1
+     *
      * @param thoughtContent internal reasoning thoughts, must not be null
      * @return formatted cyberpunk thought box
      */
     public String renderThinkingBox(final String thoughtContent) {
+        // [REQ-00088, FR-00035, CS-0050.1] Format demultiplexed reasoning block in neon yellow/gray box
         final String nonNullThought = Objects.requireNonNull(thoughtContent, "thoughtContent must not be null");
         return YELLOW + BOLD + "┌── [REASONING / THINKING STREAM]" + RESET + "\n"
                 + YELLOW + "│ " + GRAY + nonNullThought.replace("\n", "\n" + YELLOW + "│ " + GRAY) + "\n"
@@ -162,14 +186,18 @@ public final class TerminalRenderer {
     /**
      * Renders dialogue speech bubble for user or agent.
      *
+     * <p>Traceability: REQ-00001, FR-00001, CS-0050.1, CS-0060.3
+     *
      * @param role speaker role, must not be null
      * @param content message body content, must not be null
      * @return formatted message bubble string
      */
     public String renderMessageBubble(final String role, final String content) {
+        // [REQ-00001, FR-00001, CS-0050.1] Validate non-null role and content
         final String nonNullRole = Objects.requireNonNull(role, "role must not be null");
         final String nonNullContent = Objects.requireNonNull(content, "content must not be null");
 
+        // [REQ-00001, FR-00001, CS-0060.3] Render cyan box for user or magenta box for agent
         if ("user".equalsIgnoreCase(nonNullRole)) {
             return CYAN + BOLD + "┌── [USER]" + RESET + "\n"
                     + CYAN + "│ " + BRIGHT_WHITE + nonNullContent.replace("\n", "\n" + CYAN + "│ " + BRIGHT_WHITE) + "\n"
@@ -184,11 +212,14 @@ public final class TerminalRenderer {
     /**
      * Renders an OpenCode-inspired side-channel ephemeral Q&amp;A box (/btw command).
      *
+     * <p>Traceability: REQ-00001, REQ-00100, FR-00047, CS-0050.1
+     *
      * @param question user question, must not be null
      * @param answer side-channel answer, must not be null
      * @return formatted side-channel Q&amp;A box
      */
     public String renderBtwBox(final String question, final String answer) {
+        // [REQ-00100, FR-00047, CS-0050.1] Validate non-null question and answer and format side-channel box
         final String nonNullQuestion = Objects.requireNonNull(question, "question must not be null");
         final String nonNullAnswer = Objects.requireNonNull(answer, "answer must not be null");
 
@@ -200,10 +231,13 @@ public final class TerminalRenderer {
     /**
      * Renders an OpenCode-inspired active goal card (/goal command).
      *
+     * <p>Traceability: REQ-00001, REQ-00100, FR-00047, CS-0050.1
+     *
      * @param currentGoal current session goal, must not be null
      * @return formatted goal card string
      */
     public String renderGoalCard(final String currentGoal) {
+        // [REQ-00100, FR-00047, CS-0050.1] Validate non-null goal and format magenta goal card
         final String nonNullGoal = Objects.requireNonNull(currentGoal, "currentGoal must not be null");
         return MAGENTA + BOLD + "┌── [ACTIVE SESSION GOAL]" + RESET + "\n"
                 + MAGENTA + "│ " + BRIGHT_WHITE + nonNullGoal.replace("\n", "\n" + MAGENTA + "│ " + BRIGHT_WHITE) + "\n"
@@ -213,18 +247,23 @@ public final class TerminalRenderer {
     /**
      * Renders an OpenCode-inspired environment diagnostic card (/env command).
      *
+     * <p>Traceability: REQ-00001, REQ-00100, FR-00001, FR-00047, CS-0050.1, CS-0060.3
+     *
      * @param env detected terminal environment, must not be null
      * @return formatted environment diagnostic card
      */
     public String renderEnvironmentCard(final TerminalEnvironment env) {
+        // [REQ-00001, FR-00001, CS-0050.1] Validate non-null environment and build diagnostic header
         final TerminalEnvironment nonNullEnv = Objects.requireNonNull(env, "env must not be null");
         final StringBuilder sb = new StringBuilder();
         sb.append(GREEN).append(BOLD).append("┌── [TERMINAL & RUNTIME ENVIRONMENT]").append(RESET).append("\n");
         sb.append(GREEN).append("│ ").append(BRIGHT_WHITE).append("Mode:           ").append(nonNullEnv.getMode()).append("\n");
         sb.append(GREEN).append("│ ").append(BRIGHT_WHITE).append("Viewport:       ").append(nonNullEnv.getColumns())
-                .append("x").append(nonNullEnv.getRows()).append(nonNullEnv.isNarrow() ? " (narrow layout)" : " (standard layout)").append("\n");
+                .append("x").append(nonNullEnv.getRows())
+                .append(nonNullEnv.isNarrow() ? " (narrow layout)" : " (standard layout)").append("\n");
         sb.append(GREEN).append("│ ").append(BRIGHT_WHITE).append("Program:        ").append(nonNullEnv.getTerminalProgram()).append("\n");
 
+        // [REQ-00001, FR-00001, CS-0060.3] Append TMUX, SSH, or Local session details
         if (nonNullEnv.getMode() == TerminalMode.TMUX) {
             sb.append(GREEN).append("│ ").append(BRIGHT_WHITE).append("Tmux Pane:      ")
                     .append(nonNullEnv.getTmuxPane().isEmpty() ? "none" : nonNullEnv.getTmuxPane()).append("\n");
@@ -236,6 +275,7 @@ public final class TerminalRenderer {
             sb.append(GREEN).append("│ ").append(BRIGHT_WHITE).append("Session:        Local desktop / direct console\n");
         }
 
+        // [REQ-00001, FR-00001] Append OS, architecture, and Java Runtime version
         sb.append(GREEN).append("│ ").append(BRIGHT_WHITE).append("OS & Arch:      ")
                 .append(System.getProperty("os.name", "Unknown")).append(" ")
                 .append(System.getProperty("os.version", "")).append(" (")
@@ -250,10 +290,13 @@ public final class TerminalRenderer {
     /**
      * Renders feedback badge when content is copied to client clipboard via OSC 52.
      *
+     * <p>Traceability: REQ-00001, REQ-00100, FR-00047
+     *
      * @param byteCount number of bytes copied
      * @return formatted copy feedback badge
      */
     public String renderCopyFeedback(final int byteCount) {
+        // [REQ-00001, FR-00047] Format cyan OSC 52 byte count badge
         return BG_CYAN + " [COPIED " + byteCount + " BYTES TO CLIPBOARD VIA OSC 52] " + RESET;
     }
 }

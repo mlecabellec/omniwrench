@@ -84,6 +84,9 @@ REQ1 --> T6
 | [`TSK-20260822-013`](tasks/TSK-20260822-013.md) | Zero-Mock Runtime Quality Mandate & Automated Gate | AI Agent | Completed |
 | [`TSK-20260822-014`](tasks/TSK-20260822-014.md) | GraalVM SDK Integration & Dual Packaging Profiles | AI Agent | Completed |
 | [`TSK-20260822-015`](tasks/TSK-20260822-015.md) | In-Process Embedded llama.cpp Engine for Various CPU/GPU Architectures | AI Agent | Completed |
+| [`TSK-20261101-016`](tasks/TSK-20261101-016.md) | Dual-Mode Minimal & Fullscreen Resizable TUI Workbench Revamp | AI Agent | Completed |
+| [`TSK-20261101-017`](tasks/TSK-20261101-017.md) | Comprehensive Documentation & User Manual Update | AI Agent | Completed |
+| [`TSK-20261101-018`](tasks/TSK-20261101-018.md) | Traceability Governance, Requirements/Features Synchronization & Comprehensive Code/Test Commenting | AI Agent | Completed |
 
 
 

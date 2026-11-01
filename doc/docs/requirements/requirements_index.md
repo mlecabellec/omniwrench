@@ -53,8 +53,8 @@ This register details all formal system requirements for Omniwrench with full tr
 | ID | Title | Traceability | Priority | Verification Method | Status |
 |---|---|---|---|---|---|
 | [`REQ-00070`](REQ-00070.md) | Lanterna Multi-Pane Cyberpunk Terminal HUD | ADR-0005 | High | TUI Rendering & Snapshot Test | Implemented |
-| [`REQ-00071`](REQ-00071.md) | Context-Adaptive TUI Layout (Resize Panel Collapse) | ADR-0013 | High | SIGWINCH Resize Layout Test | Specified |
-| [`REQ-00072`](REQ-00072.md) | Adaptive Multi-Theme Engine (24-bit TrueColor to 16-ANSI) | ADR-0034 | Medium | Palette Quantization Test | Specified |
+| [`REQ-00071`](REQ-00071.md) | Context-Adaptive TUI Layout (Resize Panel Collapse) | ADR-0013 | High | Responsive Breakpoint Layout Test | Implemented |
+| [`REQ-00072`](REQ-00072.md) | Adaptive Multi-Theme Engine (24-bit TrueColor to 16-ANSI) | ADR-0034 | Medium | Palette Quantization Test | Implemented |
 | [`REQ-00073`](REQ-00073.md) | Unified Command Palette & Slash Commands (`/plan`, `/run`) | ADR-0022 | High | Command Dispatcher Test | Implemented |
 | [`REQ-00074`](REQ-00074.md) | Built-in Interactive Neon Diff Viewer (Hunk Controls) | ADR-0026 | High | Split Diff & Staging Test | Specified |
 | [`REQ-00075`](REQ-00075.md) | Embedded Lightweight SPA Dashboard (Svelte/Vue 3) | ADR-0018 | High | Web HUD & WebSocket Test | Implemented |
@@ -66,7 +66,7 @@ This register details all formal system requirements for Omniwrench with full tr
 | [`REQ-00081`](REQ-00081.md) | Autonomous Local Air-Gapped Mode (`--offline`) | ADR-0040 | Critical | Zero Egress Socket Filter Test | Specified |
 | [`REQ-00082`](REQ-00082.md) | CLI/TUI Dynamic Plugin Manager & Hot Reload (`/plugin`) | ADR-0041 | High | PluginClassLoader Dynamic Reload Test | Specified |
 | [`REQ-00083`](REQ-00083.md) | Multi-Channel Notification Mesh (OSC 777, Bell, HA Push) | ADR-0042 | Medium | Terminal Escape & Event Push Test | Specified |
-| [`REQ-00084`](REQ-00084.md) | Full Cyberpunk HUD Telemetry Layout (Header & Footer) | ADR-0043 | High | TUI Header/Footer Widget Render Test | Specified |
+| [`REQ-00084`](REQ-00084.md) | Full Cyberpunk HUD Telemetry Layout (Header & Footer) | ADR-0043 | High | TUI Header/Footer Widget Render Test | Implemented |
 | [`REQ-00085`](REQ-00085.md) | Unclean Shutdown Detection & State Auto-Recovery | ADR-0044 | Critical | Crash Lockfile & Resume State Test | Specified |
 | [`REQ-00086`](REQ-00086.md) | User-Configurable JSON Keymap Overrides & Leader Keys | ADR-0045 | High | Automated Keymap Parser & Dispatcher Test | Specified |
 | [`REQ-00087`](REQ-00087.md) | TUI Autocompletion Popover & Inline Ghost Text | ADR-0046 | High | Automated Fuzzy Completion & Rendering Test | Specified |
@@ -88,4 +88,5 @@ This register details all formal system requirements for Omniwrench with full tr
 | [`REQ-00096`](REQ-00096.md) | AES-256-GCM Encrypted Secret Vault & OS Keyring | ADR-0054 | Critical | Automated Vault Encryption, Keyring & Fallback Test | Specified |
 | [`REQ-00097`](REQ-00097.md) | ZeroMQ Transport Mesh with BSON Serialization | ADR-0055 | Critical | ZeroMQ Sockets & BSON Serialization Test | Specified |
 | [`REQ-00098`](REQ-00098.md) | Asynchronous Java NIO WatchService & Debounced File Watcher | ADR-0056 | High | Automated File Watcher Event Aggregation & Debounce Test | Specified |
-| [`REQ-00099`](REQ-00099.md) | XTerm-256 Color Palette TUI Visual Theming Engine | ADR-0057 | Medium | Theme Hot-Reload, F6 Picker Popup & XTerm-256 Token Validation Test | Specified |
+| [`REQ-00099`](REQ-00099.md) | XTerm-256 Color Palette TUI Visual Theming Engine | ADR-0057, ADR-0063 | Medium | `TuiThemePalette` 6-Theme & Picker Test | Implemented |
+| [`REQ-00100`](REQ-00100.md) | Dual-Mode Minimal Inline Stream & Full-Screen Resizable TUI Workbench | ADR-0063 | Critical | `FullscreenTuiWorkbenchTest` Multi-Tier Suite | Implemented |

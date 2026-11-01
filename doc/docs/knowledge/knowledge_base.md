@@ -688,6 +688,15 @@ This document stores persistent project knowledge, architectural decisions, and 
   - **GitLab CI (`.gitlab-ci.yml`)**: Created multi-stage declarative pipeline (`test`, `package:jvm`, `package:static-native`, `package:appimage`, `docs:build`, `release:publish`) using official container images (`maven:3.9.6-eclipse-temurin-21`, `ghcr.io/graalvm/native-image-community:21-muslib`, `gitlab-release-cli`).
   - **Gitea Actions (`.gitea/workflows/ci.yml`)**: Expanded test workflow to compile the Fat JAR, generate the relocatable distribution bundle via `build-appimage.sh --bundle-only`, and verify documentation compilation.
 
+### ADR-0063: Dual-Mode Minimal & Fullscreen Resizable TUI Architecture
+- **Status**: Accepted (2026-11-01)
+- **Context**: Operators require both an inline stream-oriented TUI that preserves native terminal scrollback (similar to Claude Code, Aider, and Antigravity CLI inline mode) and a full-screen dynamically resizable workbench TUI (similar to OpenCode, Antigravity CLI full-screen mode, OpenClaw, and Crush).
+- **Decision**: Implemented the `TuiViewModeEngine` strategy architecture in `omniwrench-tui`:
+  - **Minimal Stream Mode (`MinimalTuiModeEngine`)**: Preserves native terminal scrollback while providing themed status bars, reasoning stream demultiplexing, `/btw` side-channel prompts, OSC 52 `/copy`, and `/theme` switching.
+  - **Fullscreen Resizable Mode (`FullscreenTuiModeEngine` & `FullscreenTuiLayout`)**: Operates in the terminal's alternate screen buffer (`\033[?1049h` / `\033[?1049l`) with 4 responsive breakpoints (`COMPACT <80`, `STANDARD_SPLIT 80..119`, `WIDE_STUDIO 120..159`, `ULTRAWIDE_WORKBENCH >=160`), dual routes (`HOME` and `SESSION`), collapsible right context/telemetry sidebar, code-fence-preserving word wrapping, live `/resize <cols> <rows>` reflow, and centered modal overlays (`COMMAND_PALETTE`, `THEME_PICKER`, `HELP`).
+  - **Semantic XTerm-256 Theme Engine (`TuiThemePalette`)**: Provides 6 built-in themes (`cyberpunk`, `opencode`, `dracula`, `nord`, `matrix`, `high-contrast`).
+  - **CLI Launch Options (`TuiRunner` & `omniwrench-helper.sh`)**: Added `--fullscreen` (`-f`, `tui-full`, `fullscreen`) and `--minimal` (`tui-minimal`, `minimal`) launch flags.
+
 ---
 
 ## 🛠️ Operational Engineering Knowledge & Lessons Learned

@@ -8,11 +8,11 @@
 | **Module** | `omniwrench-tui` |
 | **Tier** | Presentation Tier |
 | **Package** | `com.omniwrench.tui` |
-| **Traceability** | [ADR-0005, ADR-0037, ADR-0043](../../knowledge/knowledge_base.md) |
+| **Traceability** | [ADR-0005, ADR-0037, ADR-0043, ADR-0058, ADR-0063](../../knowledge/knowledge_base.md) |
 
 ## Description
 
-Primary interactive terminal dashboard delivering a full-screen Cyberpunk developer interface inspired by OpenCode (`tmp/opencode`). Seamlessly adapts to standard desktop consoles, remote SSH sessions, and tmux multiplexer panes. Features OSC 52 clipboard tunneling, side-channel `/btw` queries, active `/goal` tracking, `/env` runtime inspection, and live reasoning demultiplexing.
+Primary interactive terminal orchestrator delivering both a **Minimal Inline Stream TUI** (`MinimalTuiModeEngine`, inspired by Claude Code, Aider, and Antigravity CLI inline mode) and a **Full-Screen Dynamically Resizable TUI Workbench** (`FullscreenTuiModeEngine` & `FullscreenTuiLayout`, inspired by OpenCode, Antigravity CLI full-screen mode, OpenClaw, and Crush). Seamlessly adapts to standard desktop consoles, remote SSH sessions, and tmux multiplexer panes across 4 responsive breakpoints (`COMPACT`, `STANDARD_SPLIT`, `WIDE_STUDIO`, `ULTRAWIDE_WORKBENCH`). Features OSC 52 clipboard tunneling, side-channel `/btw` cards, active `/goal` tracking, 6 semantic XTerm-256 themes (`TuiThemePalette`), centered modal overlays (`COMMAND_PALETTE`, `THEME_PICKER`, `HELP`), and live reasoning demultiplexing. See [AI Terminal Agents Analysis](../tui_agents_analysis.md).
 
 ## Component Structure & Relationships
 
@@ -24,25 +24,34 @@ skinparam componentStyle uml2
 
 package "omniwrench-tui" {
   [OmniwrenchTuiDashboard] as COMP
+  [MinimalTuiModeEngine] as MIN_ENG
+  [FullscreenTuiModeEngine] as FS_ENG
+  [FullscreenTuiLayout] as FS_LAYOUT
   [TerminalRenderer] as RENDER
+  [TuiThemePalette] as PALETTE
   [TerminalEnvironmentDetector] as DETECT
 }
 
-COMP --> DETECT : Detects Environment
-COMP --> RENDER : Formats Viewport & Widgets
-COMP --> [AgentEngine] : Dispatches Prompts
-COMP --> [SessionManager] : Queries Sessions
+COMP --> DETECT : Detects Environment (STANDARD/SSH/TMUX)
+COMP --> MIN_ENG : startMinimalLoop()
+COMP --> FS_ENG : startFullscreenLoop()
+MIN_ENG --> RENDER : Formats Inline Stream Widgets
+FS_ENG --> FS_LAYOUT : Renders Resizable Multi-Pane Frame
+FS_LAYOUT --> PALETTE : Applies Semantic XTerm-256 Colors
+MIN_ENG --> [AgentEngine] : Dispatches Prompts
+FS_ENG --> [AgentEngine] : Dispatches Prompts
 @enduml
 ```
 
 ## Primary Responsibilities
 
-- Detect operating mode (STANDARD, SSH, TMUX) and configure terminal window title and tmux window names.
-- Render responsive Cyberpunk header banner and mode-specific telemetry status pills.
-- Route interactive commands: `/btw` (ephemeral prompt), `/goal` (objective management), `/env` (diagnostics), `/copy` (OSC 52 clipboard write), `/clear` (terminal reset), and conversational prompts.
-- Demultiplex and display reasoning thought streams separately from assistant dialogue answers.
+- Detect operating mode (`STANDARD`, `SSH`, `TMUX`) and configure terminal window title and `tmux` window names.
+- Orchestrate mode selection between `TuiDisplayMode.MINIMAL` (`startMinimalLoop()`) and `TuiDisplayMode.FULLSCREEN` (`startFullscreenLoop()`).
+- Provide non-interactive snapshot rendering (`renderMinimalSnapshot()`, `renderFullscreenSnapshot()`) for diagnostics and multi-tier tests.
+- Route interactive commands across both modes: `/palette`, `/themes`, `/help`, `/close`, `/home`, `/session`, `/sidebar`, `/resize`, `/scroll`, `/theme`, `/thinking`, `/tools`, `/btw`, `/goal`, `/env`, `/copy`, `/clear`, and conversational prompts.
 
 ## Related Architectural Links
+- [AI Terminal Agents Comparative Analysis](../tui_agents_analysis.md)
 - [System Components Overview](../components.md)
 - [Module Dependencies](../dependencies.md)
 - [Interfaces & SPIs](../interfaces.md)

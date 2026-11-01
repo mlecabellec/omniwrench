@@ -1,26 +1,28 @@
 # Topics Index
 
-Comprehensive index of all engineering topics, architectural artifacts, and specifications in Omniwrench.
+Comprehensive index of all engineering topics, user manual guides, architectural artifacts, and specifications in Omniwrench.
 
 ---
 
-## 🛠️ User Guides
-- [Overview & Quick Start](user_guide/overview.md): Installation, prerequisites, and startup modes.
-- [Cyberpunk TUI Manual](user_guide/tui_guide.md): Terminal dashboard commands, hotkeys, and shortcuts.
-- [Web & Telemetry Dashboard](user_guide/web_guide.md): Graphical UI, REST endpoints, and WebSocket streaming.
-- [Configuration & Environment](user_guide/configuration_guide.md): Profiles, properties, and environment variables.
-- [Operational Workflows](user_guide/workflows.md): Multi-step coding workflows and subagent collaboration.
+## 🛠️ User Guides & Operator Manual
+- [Overview & Quick Start](user_guide/overview.md): Installation, prerequisites, packaging profiles, and startup modes.
+- [Dual-Mode Cyberpunk TUI Manual](user_guide/tui_guide.md): Minimal inline stream mode, Full-Screen dynamically resizable workbench mode, responsive breakpoints, command palette modals, themes, and slash commands.
+- [Web HUD & Telemetry Dashboard](user_guide/web_guide.md): Single-Page Application (SPA) UI, REST endpoints, and WebSocket streaming.
+- [Operations & Resumption Guide](user_guide/resuming_operations.md): Fresh machine setup, GraalVM/native packaging, and local GGUF model provisioning.
+- [Configuration & Environment](user_guide/configuration_guide.md): Profiles, properties (`omniwrench.tui.*`, `omniwrench.ai.*`), and environment variables.
+- [Operational Workflows](user_guide/workflows.md): Multi-step coding workflows, fullscreen TUI pair programming, and subagent collaboration.
 
 ---
 
 ## 🏛️ Architecture & Design
 - [Architecture Master Index](architecture/architecture_index.md): High-level system overview.
 - [System Components](architecture/components.md): Component diagrams and boundaries.
+- [AI Terminal Agents Comparative Analysis & Fullscreen TUI Architecture](architecture/tui_agents_analysis.md): Deep comparison of OpenCode, Antigravity CLI (`agy`), OpenClaw, Claude Code, Aider, and Crush, plus Omniwrench's `ADR-0063` synthesis.
 - [Package Dependencies](architecture/dependencies.md): Module topology and coupling analysis.
 - [Execution Sequences](architecture/sequences.md): Reasoning loop, tool call, and subagent orchestration sequences.
 - [Reasoning Activities](architecture/activities.md): Step-by-step activity workflows and decision gates.
 - [Class Diagrams & Patterns](architecture/classes.md): State, Strategy, and Factory OOP patterns.
-- [Interfaces & SPIs](architecture/interfaces.md): Core extensibility interfaces.
+- [Interfaces & SPIs](architecture/interfaces.md): Core extensibility interfaces (`Tool`, `BackendAdapter`, `TuiViewModeEngine`).
 - [File & State Formats](architecture/file_formats.md): Storage layouts, session serialization, and task schemas.
 - [Configuration Specifications](architecture/configuration.md): Formal property tables and validation rules.
 
@@ -33,7 +35,7 @@ Comprehensive index of all engineering topics, architectural artifacts, and spec
 - [OpenCode Engine Deep Analysis](reports/opencode_analysis.md): Solid TUI, Tree-Sitter AST highlighting, LSP client host, JGit shadow snapshots, and prompt caching.
 - [Agent Runtime & Reasoning Report](reports/agent_runtime_and_reasoning_report.md): Safe turn boundary, state machines, thought streaming, and subagent depth limits.
 - [Tooling, MCP & Sandboxing Report](reports/tooling_mcp_and_sandboxing_report.md): Pluggable reflection SPI, stdio/SSE MCP client manager, and SSRF network filters.
-- [UI, TUI & Telemetry Architecture](reports/ui_tui_and_telemetry_report.md): Lanterna double-buffered cyberpunk TUI, responsive split diffs, and OTel tracing spans.
+- [UI, TUI & Telemetry Architecture](reports/ui_tui_and_telemetry_report.md): Dual-mode TUI, responsive split diffs, and OTel tracing spans.
 - [Memory, State & Context Management](reports/memory_context_and_retrieval_report.md): Relational event sourcing, zstd cold-tier archiving, and FTS5 search.
 - [Omniwrench Strategic Implementation Blueprint](reports/omniwrench_implementation_roadmap.md): Architectural gap analysis, Java 21 module designs, and phased roadmap.
 
@@ -46,15 +48,16 @@ Comprehensive index of all engineering topics, architectural artifacts, and spec
 - [CS-0030: Java Coding Standards](architecture/CS-0030.md): Strong typing (no `var`), defensive preconditions, and bounded resources.
 - [CS-0040: Magic Numbers Prohibition](architecture/CS-0040.md): Mandatory symbolic constants and waivers.
 - [CS-0050: Verifiable Integrity & Safety](architecture/CS-0050.md): Bounded memory, explicit bounds checking, and integrity profiles.
+- [CS-0055: Zero-Mock Production Mandate](architecture/CS-0055.md): Strictly zero mock frameworks or stubbed responses in production sources.
 - [CS-0060: High-Integrity Deterministic Logic](architecture/CS-0060.md): Shadowing prevention, total branching, and exception safety.
 - [CS-0070: Operational Submission Protocols](architecture/CS-0070.md): Pre-submission local builds, test passes, and deletion analysis.
 
 ---
 
 ## 📋 Requirements, Features & Use Cases
-- [Requirements Register](requirements/requirements_index.md): Requirements `REQ-00001` through `REQ-00050`.
-- [Features Register](features/features_index.md): Functional specifications `FR-00001` through `FR-00030`.
-- [Use Cases Register](use_cases/use_cases_index.md): End-to-end use case specifications `UC-00001` through `UC-00020`.
+- [Requirements Register](requirements/requirements_index.md): Requirements `REQ-00001` through `REQ-00099`.
+- [Features Register](features/features_index.md): Functional specifications `FR-00001` through `FR-00041`.
+- [Use Cases Register](use_cases/use_cases_index.md): End-to-end use case specifications `UC-00001` through `UC-00012`.
 - [Plugins Architecture](plugins/plugins_index.md): Tool extension lifecycle and external integration.
 - [API & Protocols](api/api_index.md): REST endpoints, WebSocket streaming, and CLI command grammar.
 
@@ -64,6 +67,5 @@ Comprehensive index of all engineering topics, architectural artifacts, and spec
 - [Quality Assurance Index](quality/quality_index.md): Quality gates, PMD, Checkstyle, and JaCoCo coverage.
 - [Testing Strategy & Verification](quality/tests.md): Unit, Integration, Mockito, and Stress testing standards.
 - [Developer Rules](development/dev_rules.md): Contribution guidelines, branch management, and CI lifecycle.
-- [Project Management](project/project_management.md): Resource allocations, 2026-2029 constraints, and active tasks.
-- [Project Tasks Register](project/tasks/TSK-20260822-001.md): Individual task tracking documents.
-- [Knowledge Base](knowledge/knowledge_base.md): Continuous knowledge acquisition and architectural memories.
+- [Project Management](project/project_management.md): Resource allocations, 2026-2029 constraints, and active tasks (`TSK-20260822-001` through `TSK-20261101-017`).
+- [Knowledge Base](knowledge/knowledge_base.md): Continuous knowledge acquisition and Architectural Decision Records (`ADR-0001` through `ADR-0063`).
