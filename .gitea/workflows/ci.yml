@@ -28,6 +28,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install System Dependencies (Maven, Python, PlantUML, WeasyPrint)
+        run: |
+          SUDO=""
+          [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null && SUDO="sudo"
+          $SUDO apt-get update
+          $SUDO apt-get install -y --no-install-recommends \
+            maven python3 python3-venv python3-pip plantuml graphviz \
+            libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0 libjpeg-dev \
+            libopenjp2-7-dev libffi-dev libxml2-dev libxslt1-dev
+
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
@@ -47,6 +57,18 @@ jobs:
       - name: Build Documentation Site
         run: ./helpers/build-docs.sh build
 
+      - name: Upload Build & Docs Artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: omniwrench-build-docs
+          path: |
+            omniwrench-app/target/*.jar
+            dist/*
+            doc/site/
+            doc/documentation.pdf
+          retention-days: 7
+
       - name: "Release: Publish Artifacts to Gitea Tag Release"
         if: success() && startsWith(gitea.ref, 'refs/tags/')
         continue-on-error: true
@@ -57,6 +79,7 @@ jobs:
           GITEA_REPO: ${{ gitea.repository }}
           TAG_NAME: ${{ gitea.ref_name }}
           RELEASE_PATHS: |
+            omniwrench-app/target/*.jar
             target/*.jar
             dist/*
             doc/documentation.pdf
@@ -306,6 +329,8 @@ jobs:
   package-static-native:
     name: Build Static Native Binary (Approach 2)
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/graalvm/native-image-community:21-muslib
     needs: build-and-test
     if: >-
       (startsWith(gitea.server_url, 'https://gitea2.lecabellec.fr') ||
@@ -318,11 +343,28 @@ jobs:
       contains(gitea.event.head_commit.message, 'RELEASE_ARTIFACTS') ||
       contains(gitea.event.commits[0].message, 'RELEASE_ARTIFACTS'))
     steps:
+      - name: Bootstrap Git, Node.js & Maven
+        run: |
+          if command -v dnf >/dev/null 2>&1; then
+            dnf install -y git nodejs maven tar gzip findutils python3 ca-certificates
+          else
+            microdnf install -y git nodejs maven tar gzip findutils python3 ca-certificates
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Compile Static Native Image (musl)
-        run: ./helpers/build-static-native.sh --docker --clean
+        run: ./helpers/build-static-native.sh --clean
+
+      - name: Upload Static Native Binary Artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: omniwrench-static-native
+          path: |
+            omniwrench-app/target/omniwrench*
+          retention-days: 7
 
       - name: "Release: Publish Artifacts to Gitea Tag Release"
         if: success() && startsWith(gitea.ref, 'refs/tags/')
@@ -334,6 +376,7 @@ jobs:
           GITEA_REPO: ${{ gitea.repository }}
           TAG_NAME: ${{ gitea.ref_name }}
           RELEASE_PATHS: |
+            omniwrench-app/target/omniwrench*
             dist/*
             target/omniwrench*
         run: |
