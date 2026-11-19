@@ -12,7 +12,7 @@ The Google Antigravity SDK implements a clean 3-tier layering model separating u
 
 ```plantuml
 @startuml
-scale max 600 width
+scale max 600*900
 skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
 skinparam componentStyle uml2
@@ -122,7 +122,7 @@ The `LocalHarnessEventProcessor` continuously reads the WebSocket and demultiple
 
 ```plantuml
 @startuml
-scale max 600 width
+scale max 600*900
 skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
 
@@ -219,7 +219,7 @@ The Antigravity SDK supports two subagent topologies:
 
 ```plantuml
 @startuml
-scale max 600 width
+scale max 600*900
 skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
 
@@ -256,7 +256,7 @@ Root --> User: Summary of findings
 
 ```plantuml
 @startuml
-scale max 600 width
+scale max 600*900
 skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
 

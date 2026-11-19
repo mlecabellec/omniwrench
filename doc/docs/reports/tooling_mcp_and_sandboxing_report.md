@@ -25,7 +25,7 @@ Omniwrench can seamlessly consume external MCP servers (e.g. database connectors
 
 ```plantuml
 @startuml
-scale max 600 width
+scale max 600*900
 skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
 skinparam componentStyle uml2
@@ -85,7 +85,7 @@ Prevents agents using `web_fetch` or HTTP tools from attacking internal infrastr
 
 ```plantuml
 @startuml
-scale max 600 width
+scale max 600*900
 skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
 

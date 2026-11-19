@@ -4,6 +4,7 @@ This catalog details developer, automation, and system interaction scenarios wit
 
 ```plantuml
 @startuml
+scale max 600*900
 skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
 

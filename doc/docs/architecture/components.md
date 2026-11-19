@@ -4,7 +4,7 @@ Omniwrench segregates duties cleanly across its 6 functional Maven modules (plus
 
 ```plantuml
 @startuml
-scale max 600 width
+scale max 600*900
 skinparam backgroundColor #2e303f
 skinparam defaultFontColor #ffffff
 skinparam componentStyle uml2
