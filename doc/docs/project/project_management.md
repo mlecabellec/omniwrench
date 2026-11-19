@@ -87,6 +87,7 @@ REQ1 --> T6
 | [`TSK-20261101-016`](tasks/TSK-20261101-016.md) | Dual-Mode Minimal & Fullscreen Resizable TUI Workbench Revamp | AI Agent | Completed |
 | [`TSK-20261101-017`](tasks/TSK-20261101-017.md) | Comprehensive Documentation & User Manual Update | AI Agent | Completed |
 | [`TSK-20261101-018`](tasks/TSK-20261101-018.md) | Traceability Governance, Requirements/Features Synchronization & Comprehensive Code/Test Commenting | AI Agent | Completed |
+| [`TSK-20261119-019`](tasks/TSK-20261119-019.md) | Gitea2 CI Follow-Up: Staggered GraalVM Native Verification, Heap Bounding & Cross-Repo Docs Token | AI Agent | Open |
 
 
 
