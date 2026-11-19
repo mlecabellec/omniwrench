@@ -29,7 +29,7 @@ setup_mkdocs_kit() {
         python3 -m venv "$MKDOCS_KIT_VENV"
         "$MKDOCS_KIT_VENV/bin/pip" install --upgrade pip
         "$MKDOCS_KIT_VENV/bin/pip" install "setuptools<82.0.0"
-        "$MKDOCS_KIT_VENV/bin/pip" install mkdocs mkdocs-material weasyprint wireviz nwdiag bit_field
+        "$MKDOCS_KIT_VENV/bin/pip" install "$MKDOCS_KIT_DIR"
     fi
 }
 
