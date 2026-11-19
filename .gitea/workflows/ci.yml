@@ -10,6 +10,10 @@ on:
   pull_request:
     branches: [ master, main ]
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build-and-test:
     name: Build, Test & Docs Verification
@@ -32,11 +36,18 @@ jobs:
         run: |
           SUDO=""
           [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null && SUDO="sudo"
-          $SUDO apt-get update
-          $SUDO apt-get install -y --no-install-recommends \
-            maven python3 python3-venv python3-pip plantuml graphviz \
-            libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0 libjpeg-dev \
+          APT_OPTS=(-o Acquire::ForceIPv4=true -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+          PKGS=(
+            maven python3 python3-venv python3-pip plantuml graphviz fonts-noto-color-emoji
+            libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0 libjpeg-dev
             libopenjp2-7-dev libffi-dev libxml2-dev libxslt1-dev
+          )
+          $SUDO apt-get "${APT_OPTS[@]}" -o APT::Update::Error-Mode=any update || $SUDO apt-get "${APT_OPTS[@]}" update || true
+          if ! $SUDO apt-get "${APT_OPTS[@]}" install -y --no-install-recommends "${PKGS[@]}"; then
+            $SUDO sed -i 's|http://archive.ubuntu.com/ubuntu|http://fr.archive.ubuntu.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|http://fr.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+            $SUDO apt-get "${APT_OPTS[@]}" update || true
+            $SUDO apt-get "${APT_OPTS[@]}" install -y --no-install-recommends "${PKGS[@]}"
+          fi
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -55,11 +66,14 @@ jobs:
         run: ./helpers/build-appimage.sh --bundle-only
 
       - name: Build Documentation Site
+        env:
+          GITEA_SERVER_URL: ${{ gitea.server_url }}
+          GITEA_CLONE_TOKEN: ${{ secrets.MKDOCS_KIT_TOKEN || secrets.GITEA_CLEANUP_TOKEN || gitea.token }}
         run: ./helpers/build-docs.sh build
 
       - name: Upload Build & Docs Artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: https://gitea.com/actions/gitea-upload-artifact@v4
         with:
           name: omniwrench-build-docs
           path: |
@@ -359,7 +373,7 @@ jobs:
 
       - name: Upload Static Native Binary Artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: https://gitea.com/actions/gitea-upload-artifact@v4
         with:
           name: omniwrench-static-native
           path: |

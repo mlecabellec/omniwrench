@@ -20,8 +20,29 @@ setup_mkdocs_kit() {
         MKDOCS_KIT_VENV="$MKDOCS_KIT_LOCAL/.venv"
         MKDOCS_KIT_CLI="$MKDOCS_KIT_LOCAL/src/mkdocs_kit/cli.py"
     elif [[ ! -d "$MKDOCS_KIT_DIR/.git" ]]; then
-        echo "[INFO] mkdocs-kit not found locally. Cloning from GitHub..."
-        git clone https://github.com/mlecabellec/mkdocs-kit.git "$MKDOCS_KIT_DIR"
+        echo "[INFO] mkdocs-kit not found locally. Cloning from Gitea (fallback to GitHub)..."
+        GITEA_BASE="${GITEA_SERVER_URL:-https://gitea2.lecabellec.fr}"
+        GITEA_BASE="${GITEA_BASE%/}"
+        CLONE_OK=0
+        if [[ -n "${GITEA_CLONE_TOKEN:-}" ]]; then
+            ASKPASS_SCRIPT=$(mktemp)
+            cat > "$ASKPASS_SCRIPT" <<'EOF'
+#!/bin/sh
+case "$1" in
+  *Username*) printf '%s\n' "x-access-token" ;;
+  *) printf '%s\n' "${GITEA_CLONE_TOKEN}" ;;
+esac
+EOF
+            chmod +x "$ASKPASS_SCRIPT"
+            if GIT_ASKPASS="$ASKPASS_SCRIPT" GIT_TERMINAL_PROMPT=0 git clone --depth=1 "${GITEA_BASE}/m/mkdocs-kit.git" "$MKDOCS_KIT_DIR"; then
+                CLONE_OK=1
+            fi
+            rm -f "$ASKPASS_SCRIPT"
+        fi
+        if [[ "$CLONE_OK" -eq 0 ]]; then
+            GIT_TERMINAL_PROMPT=0 git clone --depth=1 "${GITEA_BASE}/m/mkdocs-kit.git" "$MKDOCS_KIT_DIR" || \
+                git clone --depth=1 https://github.com/mlecabellec/mkdocs-kit.git "$MKDOCS_KIT_DIR"
+        fi
     fi
     
     if [[ ! -d "$MKDOCS_KIT_VENV" ]]; then
